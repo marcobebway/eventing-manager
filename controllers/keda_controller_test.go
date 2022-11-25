@@ -27,9 +27,8 @@ var _ = Describe("Keda controller", func() {
 		)
 
 		var (
-			metricsDeploymentName = fmt.Sprintf("%s-metrics-apiserver", operatorName)
-			kedaDeploymentName    = operatorName
-			kedaSpec              = v1alpha1.KedaSpec{
+			kedaDeploymentName = operatorName
+			kedaSpec           = v1alpha1.KedaSpec{
 				BackendSpec: v1alpha1.BackendSpec{
 					Type: v1alpha1.BackendTypeNats,
 				},
@@ -45,9 +44,9 @@ var _ = Describe("Keda controller", func() {
 
 			// operations like C(R)UD can be tested in separated tests,
 			// but we have time-consuming flow and decided do it in one test
-			shouldCreateKeda(h, kedaName, kedaDeploymentName, metricsDeploymentName, kedaSpec)
+			shouldCreateKeda(h, kedaName, kedaDeploymentName, kedaSpec)
 
-			shouldPropagateKedaCrdSpecProperties(h, kedaDeploymentName, metricsDeploymentName, kedaSpec)
+			shouldPropagateKedaCrdSpecProperties(h, kedaDeploymentName, kedaSpec)
 
 			//TODO: disabled because of bug in operator (https://github.com/kyma-project/module-manager/issues/94)
 			//shouldUpdateKeda(h, kedaName, kedaDeploymentName)
@@ -57,12 +56,11 @@ var _ = Describe("Keda controller", func() {
 	})
 })
 
-func shouldCreateKeda(h testHelper, kedaName, kedaDeploymentName, metricsDeploymentName string, kedaSpec v1alpha1.KedaSpec) {
+func shouldCreateKeda(h testHelper, kedaName, kedaDeploymentName string, kedaSpec v1alpha1.KedaSpec) {
 	// act
 	h.createKeda(kedaName, kedaSpec)
 
 	// we have to update deployment status manually
-	h.updateDeploymentStatus(metricsDeploymentName)
 	h.updateDeploymentStatus(kedaDeploymentName)
 
 	// assert
@@ -114,24 +112,14 @@ func shouldUpdateKeda(h testHelper, kedaName string, kedaDeploymentName string) 
 		Should(BeTrue())
 }
 
-func shouldPropagateKedaCrdSpecProperties(h testHelper, kedaDeploymentName string, metricsDeploymentName string, kedaSpec v1alpha1.KedaSpec) {
+func shouldPropagateKedaCrdSpecProperties(h testHelper, kedaDeploymentName string, kedaSpec v1alpha1.KedaSpec) {
 	checkKedaCrdSpecPropertyPropagationToKedaDeployment(h, kedaDeploymentName, kedaSpec)
-	checkKedaCrdSpecPropertyPropagationToMetricsDeployment(h, metricsDeploymentName, kedaSpec)
 }
 
 func checkKedaCrdSpecPropertyPropagationToKedaDeployment(h testHelper, kedaDeploymentName string, kedaSpec v1alpha1.KedaSpec) {
 	// act
 	var kedaDeployment appsv1.Deployment
 	Eventually(h.createGetKubernetesObjectFunc(kedaDeploymentName, &kedaDeployment)).
-		WithPolling(time.Second * 2).
-		WithTimeout(time.Second * 10).
-		Should(BeTrue())
-}
-
-func checkKedaCrdSpecPropertyPropagationToMetricsDeployment(h testHelper, metricsDeploymentName string, kedaSpec v1alpha1.KedaSpec) {
-	// act
-	var metricsDeployment appsv1.Deployment
-	Eventually(h.createGetKubernetesObjectFunc(metricsDeploymentName, &metricsDeployment)).
 		WithPolling(time.Second * 2).
 		WithTimeout(time.Second * 10).
 		Should(BeTrue())
@@ -184,18 +172,18 @@ func (h *testHelper) createGetKubernetesObjectFunc(serviceAccountName string, ob
 
 func (h *testHelper) updateDeploymentStatus(deploymentName string) {
 	By(fmt.Sprintf("Updating deployment status: %s", deploymentName))
-	var deployment appsv1.Deployment
+	var deployment appsv1.StatefulSet
 	Eventually(h.createGetKubernetesObjectFunc(deploymentName, &deployment)).
 		WithPolling(time.Second * 2).
 		WithTimeout(time.Second * 10).
 		Should(BeTrue())
 
-	deployment.Status.Conditions = append(deployment.Status.Conditions, appsv1.DeploymentCondition{
-		Type:    appsv1.DeploymentAvailable,
-		Status:  corev1.ConditionTrue,
-		Reason:  "test-reason",
-		Message: "test-message",
-	})
+	//deployment.Status.Conditions = append(deployment.Status.Conditions, appsv1.DeploymentCondition{
+	//	Type:    appsv1.DeploymentAvailable,
+	//	Status:  corev1.ConditionTrue,
+	//	Reason:  "test-reason",
+	//	Message: "test-message",
+	//})
 	deployment.Status.Replicas = 1
 	Expect(k8sClient.Status().Update(h.ctx, &deployment)).To(Succeed())
 
@@ -214,7 +202,7 @@ func (h *testHelper) updateDeploymentStatus(deploymentName string) {
 	By(fmt.Sprintf("Deployment status updated: %s", deploymentName))
 }
 
-func (h *testHelper) createReplicaSetForDeployment(deployment appsv1.Deployment) string {
+func (h *testHelper) createReplicaSetForDeployment(deployment appsv1.StatefulSet) string {
 	replicaSetName := fmt.Sprintf("%s-replica-set", deployment.Name)
 	By(fmt.Sprintf("Creating replica set (for deployment): %s", replicaSetName))
 	var (

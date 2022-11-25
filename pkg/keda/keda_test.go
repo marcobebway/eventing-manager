@@ -27,7 +27,7 @@ func TestHasExistingKedaInstallation(t *testing.T) {
 		{
 			name: "No deployment on the cluster matching the Keda Labels",
 			c: fake.NewFakeClient(
-				&appsv1.Deployment{
+				&appsv1.StatefulSet{
 					ObjectMeta: metav1.ObjectMeta{Name: "d1", Labels: map[string]string{"test": "test"}},
 				},
 			),
@@ -37,7 +37,7 @@ func TestHasExistingKedaInstallation(t *testing.T) {
 		{
 			name: "One deployment with Keda matching Labels",
 			c: fake.NewFakeClient(
-				&appsv1.Deployment{
+				&appsv1.StatefulSet{
 					ObjectMeta: metav1.ObjectMeta{Name: "d1", Labels: kedaCoreLabels},
 				},
 			),
@@ -47,8 +47,8 @@ func TestHasExistingKedaInstallation(t *testing.T) {
 		{
 			name: "Multiple deployments with Keda matching Labels",
 			c: fake.NewFakeClient(
-				&appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "d1", Labels: kedaCoreLabels}},
-				&appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "d2", Labels: kedaCoreLabels}},
+				&appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{Name: "d1", Labels: kedaCoreLabels}},
+				&appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{Name: "d2", Labels: kedaCoreLabels}},
 			),
 			want:    true,
 			wantErr: false,
@@ -56,7 +56,7 @@ func TestHasExistingKedaInstallation(t *testing.T) {
 		{
 			name: "One deployment with partially matching labels",
 			c: fake.NewFakeClient(
-				&appsv1.Deployment{
+				&appsv1.StatefulSet{
 					ObjectMeta: metav1.ObjectMeta{Name: "d1", Labels: map[string]string{"app": "keda-operator", "test": "test"}},
 				},
 			),
