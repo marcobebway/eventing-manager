@@ -218,7 +218,7 @@ $(KYMA):
 	## Detect if operating system
 	$(if $(KYMA_FILE_NAME),,$(call os_error, ${OS_TYPE}, ${OS_ARCH}))
 	test -f $@ || curl -s -Lo $(KYMA) https://storage.googleapis.com/kyma-cli-$(KYMA_STABILITY)/$(KYMA_FILE_NAME)
-	chmod 0100 $(KYMA)
+	chmod +x $(KYMA)
 
 ########## Grafana Dashboard ###########
 .PHONY: grafana-dashboard
