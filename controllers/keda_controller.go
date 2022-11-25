@@ -64,10 +64,7 @@ type KedaReconciler struct {
 
 // initReconciler injects the required configuration into the declarative reconciler.
 func (r *KedaReconciler) initReconciler(mgr ctrl.Manager) error {
-	manifestResolver := &ManifestResolver{
-		chartPath: r.ChartPath,
-	}
-
+	manifestResolver := &ManifestResolver{chartPath: r.ChartPath}
 	return r.Inject(mgr, &v1alpha1.Keda{},
 		declarative.WithManifestResolver(manifestResolver),
 		declarative.WithResourcesReady(true),
@@ -80,21 +77,21 @@ func (r *KedaReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	if err := r.initReconciler(mgr); err != nil {
 		return err
 	}
-
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.Keda{}).
-		Complete(r)
+	return ctrl.NewControllerManagedBy(mgr).For(&v1alpha1.Keda{}).Complete(r)
 }
 
-func structToFlags(obj interface{}) (flags types.Flags, err error) {
+func structToFlags(obj interface{}) (types.Flags, error) {
 	data, err := json.Marshal(obj)
-
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	err = json.Unmarshal(data, &flags)
-	return
+	var flags types.Flags
+	if err = json.Unmarshal(data, &flags); err != nil {
+		return nil, err
+	}
+
+	return flags, nil
 }
 
 // ManifestResolver represents the chart information for the passed Sample resource.
@@ -106,14 +103,12 @@ type ManifestResolver struct {
 func (m *ManifestResolver) Get(obj types.BaseCustomObject, _ logr.Logger) (types.InstallationSpec, error) {
 	sample, valid := obj.(*v1alpha1.Keda)
 	if !valid {
-		return types.InstallationSpec{},
-			fmt.Errorf("invalid type conversion for %s", client.ObjectKeyFromObject(obj))
+		return types.InstallationSpec{}, fmt.Errorf("invalid type conversion for %s", client.ObjectKeyFromObject(obj))
 	}
 
 	flags, err := structToFlags(sample.Spec)
 	if err != nil {
-		return types.InstallationSpec{},
-			fmt.Errorf("resolving manifest failed: %w", err)
+		return types.InstallationSpec{}, fmt.Errorf("resolving manifest failed: %w", err)
 	}
 
 	return types.InstallationSpec{
