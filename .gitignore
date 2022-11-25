@@ -21,10 +21,10 @@ testbin/*
 
 .DS_Store
 
-mod
-bin
-charts
-vendor
+/mod
+/bin
+/charts
+/vendor
 default.yaml
 template.yaml
 template-k3d.yaml
