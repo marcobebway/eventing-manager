@@ -36,118 +36,17 @@ spec:
             description: KedaSpec defines the desired state of Keda
             properties:
               backend:
+                description: BackendSpec defines the desired state of the Eventing
+                  backend.
                 properties:
                   type:
-                    description: BackendType TODO(marcobebway)
+                    description: BackendType is the supported Eventing backend type.
                     enum:
                     - nats
                     - jetstream
                     type: string
                 required:
                 - type
-                type: object
-              env:
-                items:
-                  properties:
-                    name:
-                      type: string
-                    value:
-                      type: string
-                  required:
-                  - name
-                  - value
-                  type: object
-                type: array
-              logging:
-                properties:
-                  metricServer:
-                    properties:
-                      level:
-                        enum:
-                        - "0"
-                        - "4"
-                        type: string
-                    type: object
-                  operator:
-                    properties:
-                      format:
-                        enum:
-                        - json
-                        - console
-                        type: string
-                      level:
-                        enum:
-                        - debug
-                        - info
-                        - error
-                        type: string
-                      timeEncoding:
-                        enum:
-                        - epoch
-                        - millis
-                        - nano
-                        - iso8601
-                        - rfc3339
-                        - rfc3339nano
-                        type: string
-                    type: object
-                type: object
-              resources:
-                properties:
-                  metricServer:
-                    description: ResourceRequirements describes the compute resource
-                      requirements.
-                    properties:
-                      limits:
-                        additionalProperties:
-                          anyOf:
-                          - type: integer
-                          - type: string
-                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                          x-kubernetes-int-or-string: true
-                        description: 'Limits describes the maximum amount of compute
-                          resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
-                        type: object
-                      requests:
-                        additionalProperties:
-                          anyOf:
-                          - type: integer
-                          - type: string
-                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                          x-kubernetes-int-or-string: true
-                        description: 'Requests describes the minimum amount of compute
-                          resources required. If Requests is omitted for a container,
-                          it defaults to Limits if that is explicitly specified, otherwise
-                          to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
-                        type: object
-                    type: object
-                  operator:
-                    description: ResourceRequirements describes the compute resource
-                      requirements.
-                    properties:
-                      limits:
-                        additionalProperties:
-                          anyOf:
-                          - type: integer
-                          - type: string
-                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                          x-kubernetes-int-or-string: true
-                        description: 'Limits describes the maximum amount of compute
-                          resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
-                        type: object
-                      requests:
-                        additionalProperties:
-                          anyOf:
-                          - type: integer
-                          - type: string
-                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                          x-kubernetes-int-or-string: true
-                        description: 'Requests describes the minimum amount of compute
-                          resources required. If Requests is omitted for a container,
-                          it defaults to Limits if that is explicitly specified, otherwise
-                          to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
-                        type: object
-                    type: object
                 type: object
             required:
             - backend

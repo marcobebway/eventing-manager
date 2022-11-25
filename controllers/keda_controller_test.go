@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	rtypes "github.com/kyma-project/module-manager/operator/pkg/types"
@@ -28,57 +27,11 @@ var _ = Describe("Keda controller", func() {
 		)
 
 		var (
-			metricsDeploymentName           = fmt.Sprintf("%s-metrics-apiserver", operatorName)
-			kedaDeploymentName              = operatorName
-			notDefaultOperatorLogLevel      = v1alpha1.OperatorLogLevelDebug
-			notDefaultLogFormat             = v1alpha1.LogFormatJSON
-			notDefaultLogTimeEncoding       = v1alpha1.TimeEncodingEpoch
-			notDefaultMetricsServerLogLevel = v1alpha1.MetricsServerLogLevelDebug
-			kedaSpec                        = v1alpha1.KedaSpec{
+			metricsDeploymentName = fmt.Sprintf("%s-metrics-apiserver", operatorName)
+			kedaDeploymentName    = operatorName
+			kedaSpec              = v1alpha1.KedaSpec{
 				BackendSpec: v1alpha1.BackendSpec{
 					Type: v1alpha1.BackendTypeNats,
-				},
-				Logging: &v1alpha1.LoggingCfg{
-					Operator: &v1alpha1.LoggingOperatorCfg{
-						Level:        &notDefaultOperatorLogLevel,
-						Format:       &notDefaultLogFormat,
-						TimeEncoding: &notDefaultLogTimeEncoding,
-					},
-					MetricsServer: &v1alpha1.LoggingMetricsSrvCfg{
-						Level: &notDefaultMetricsServerLogLevel,
-					},
-				},
-				Resources: &v1alpha1.Resources{
-					Operator: &corev1.ResourceRequirements{
-						Requests: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("171m"),
-							corev1.ResourceMemory: resource.MustParse("172Mi"),
-						},
-						Limits: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("173m"),
-							corev1.ResourceMemory: resource.MustParse("174Mi"),
-						},
-					},
-					MetricsServer: &corev1.ResourceRequirements{
-						Requests: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("175m"),
-							corev1.ResourceMemory: resource.MustParse("176Mi"),
-						},
-						Limits: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("177m"),
-							corev1.ResourceMemory: resource.MustParse("178Mi"),
-						},
-					},
-				},
-				Env: []v1alpha1.NameValue{
-					{
-						Name:  "some-env-name",
-						Value: "some-env-value",
-					},
-					{
-						Name:  "other-env-name",
-						Value: "other-env-value",
-					},
 				},
 			}
 		)
@@ -150,12 +103,6 @@ func shouldUpdateKeda(h testHelper, kedaName string, kedaDeploymentName string) 
 		WithTimeout(time.Second * 10).
 		Should(BeTrue())
 
-	newTestEnv := v1alpha1.NameValue{
-		Name:  "update-test-env-key",
-		Value: "update-test-env-value",
-	}
-	keda.Spec.Env = append(keda.Spec.Env, newTestEnv)
-
 	// act
 	Expect(k8sClient.Update(h.ctx, &keda)).To(Succeed())
 
@@ -165,9 +112,6 @@ func shouldUpdateKeda(h testHelper, kedaName string, kedaDeploymentName string) 
 		WithPolling(time.Second * 2).
 		WithTimeout(time.Second * 10).
 		Should(BeTrue())
-
-	expectedEnv := ToEnvVar(newTestEnv)
-	Expect(deployment.Spec.Template.Spec.Containers[0].Env).To(ContainElement(expectedEnv))
 }
 
 func shouldPropagateKedaCrdSpecProperties(h testHelper, kedaDeploymentName string, metricsDeploymentName string, kedaSpec v1alpha1.KedaSpec) {
@@ -182,21 +126,6 @@ func checkKedaCrdSpecPropertyPropagationToKedaDeployment(h testHelper, kedaDeplo
 		WithPolling(time.Second * 2).
 		WithTimeout(time.Second * 10).
 		Should(BeTrue())
-
-	expectedEnvs := ToEnvVars(kedaSpec.Env)
-
-	// assert
-	firstContainer := kedaDeployment.Spec.Template.Spec.Containers[0]
-	Expect(firstContainer.Args).
-		To(ContainElement(fmt.Sprintf("--zap-log-level=%s", *kedaSpec.Logging.Operator.Level)))
-	Expect(firstContainer.Args).
-		To(ContainElement(fmt.Sprintf("--zap-encoder=%s", *kedaSpec.Logging.Operator.Format)))
-	Expect(firstContainer.Args).
-		To(ContainElement(fmt.Sprintf("--zap-time-encoding=%s", *kedaSpec.Logging.Operator.TimeEncoding)))
-
-	Expect(firstContainer.Resources).To(Equal(*kedaSpec.Resources.Operator))
-
-	Expect(firstContainer.Env).To(ContainElements(expectedEnvs))
 }
 
 func checkKedaCrdSpecPropertyPropagationToMetricsDeployment(h testHelper, metricsDeploymentName string, kedaSpec v1alpha1.KedaSpec) {
@@ -206,32 +135,6 @@ func checkKedaCrdSpecPropertyPropagationToMetricsDeployment(h testHelper, metric
 		WithPolling(time.Second * 2).
 		WithTimeout(time.Second * 10).
 		Should(BeTrue())
-
-	expectedEnvs := ToEnvVars(kedaSpec.Env)
-
-	// assert
-	firstContainer := metricsDeployment.Spec.Template.Spec.Containers[0]
-	Expect(firstContainer.Args).
-		To(ContainElement(fmt.Sprintf("--v=%s", *kedaSpec.Logging.MetricsServer.Level)))
-
-	Expect(firstContainer.Resources).To(Equal(*kedaSpec.Resources.MetricsServer))
-
-	Expect(firstContainer.Env).To(ContainElements(expectedEnvs))
-}
-
-func ToEnvVar(nv v1alpha1.NameValue) corev1.EnvVar {
-	return corev1.EnvVar{
-		Name:  nv.Name,
-		Value: nv.Value,
-	}
-}
-
-func ToEnvVars(nvs []v1alpha1.NameValue) []corev1.EnvVar {
-	var result []corev1.EnvVar
-	for _, nv := range nvs {
-		result = append(result, ToEnvVar(nv))
-	}
-	return result
 }
 
 type testHelper struct {
