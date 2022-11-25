@@ -22,7 +22,6 @@ func IsInstalled(config *rest.Config, logger logr.Logger) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to create Kubernetes Client: %v", err)
 	}
-
 	return isInstalledWithClient(k8sClient, logger)
 }
 
