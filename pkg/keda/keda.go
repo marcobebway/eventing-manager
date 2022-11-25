@@ -40,5 +40,6 @@ func isInstalledWithClient(c client.Client, logger logr.Logger) (bool, error) {
 		logger.Info(fmt.Sprintf("found [%d] statefulsets with matchingLabels: %v", len(stsList.Items), matchingLabels))
 		return true, nil
 	}
+
 	return false, nil
 }
