@@ -24,7 +24,7 @@ delete-k3d-cluster:
 	-k3d cluster delete ${CLUSTER_NAME}
 
 .PHONY: create-k3d
-create-k3d: 
+create-k3d:
 	${KYMA} provision k3d --registry-port ${REGISTRY_PORT} --name ${CLUSTER_NAME}
 
 .PHONY: delete-k3d
@@ -70,7 +70,9 @@ patch-mod-mgr-role:
 .PHONY: install-module
 install-module:
 	${KYMA} alpha deploy \
-		--template=${PROJECT_ROOT}/template-k3d.yaml
+		--template=${PROJECT_ROOT}/template-k3d.yaml \
+		--kustomization https://github.com/kyma-project/lifecycle-manager/config/default@main \
+		--kustomization https://github.com/kyma-project/module-manager/config/default@main
 
 .PHONY: run
 run: kyma create-k3d module-image patch-coredns module-build fix-template install-module patch-mod-mgr-role enable-module verify
@@ -81,4 +83,3 @@ stop: delete-k3d
 .PHONY: verify
 verify:
 	@${PROJECT_ROOT}/hack/verify_kyma_status.sh
-
