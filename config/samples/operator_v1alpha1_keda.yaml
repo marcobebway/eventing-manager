@@ -5,6 +5,5 @@ metadata:
     operator.kyma-project.io/kyma-name: keda-sample
   name: keda-sample
 spec:
-  logging:
-    operator:
-      level: "debug"
+  backend:
+    type: "nats"

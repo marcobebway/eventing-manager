@@ -108,9 +108,8 @@ kind: Keda
 metadata:
   name: keda-sample
 spec:
-  logging:
-    operator:
-      level: "info"
+  backend:
+    type: "nats"
 EOF
 ```
 
