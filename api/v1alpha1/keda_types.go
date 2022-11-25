@@ -63,6 +63,19 @@ type LoggingMetricsSrvCfg struct {
 	Level *MetricsServerLogLevel `json:"level,omitempty"`
 }
 
+// BackendType TODO(marcobebway)
+// +kubebuilder:validation:Enum=nats;jetstream
+type BackendType string
+
+const (
+	BackendTypeNats      = BackendType("nats")
+	BackendTypeJetStream = BackendType("jetstream")
+)
+
+type BackendSpec struct {
+	Type BackendType `json:"type"`
+}
+
 type LoggingCfg struct {
 	Operator      *LoggingOperatorCfg   `json:"operator,omitempty"`
 	MetricsServer *LoggingMetricsSrvCfg `json:"metricServer,omitempty"`
@@ -80,9 +93,10 @@ type NameValue struct {
 
 // KedaSpec defines the desired state of Keda
 type KedaSpec struct {
-	Logging   *LoggingCfg `json:"logging,omitempty"`
-	Resources *Resources  `json:"resources,omitempty"`
-	Env       []NameValue `json:"env,omitempty"`
+	BackendSpec BackendSpec `json:"backend"`
+	Logging     *LoggingCfg `json:"logging,omitempty"`
+	Resources   *Resources  `json:"resources,omitempty"`
+	Env         []NameValue `json:"env,omitempty"`
 }
 
 //+kubebuilder:object:root=true

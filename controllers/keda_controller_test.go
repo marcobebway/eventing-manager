@@ -35,6 +35,9 @@ var _ = Describe("Keda controller", func() {
 			notDefaultLogTimeEncoding       = v1alpha1.TimeEncodingEpoch
 			notDefaultMetricsServerLogLevel = v1alpha1.MetricsServerLogLevelDebug
 			kedaSpec                        = v1alpha1.KedaSpec{
+				BackendSpec: v1alpha1.BackendSpec{
+					Type: v1alpha1.BackendTypeNats,
+				},
 				Logging: &v1alpha1.LoggingCfg{
 					Operator: &v1alpha1.LoggingOperatorCfg{
 						Level:        &notDefaultOperatorLogLevel,

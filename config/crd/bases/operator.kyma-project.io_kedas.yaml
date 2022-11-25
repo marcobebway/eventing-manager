@@ -35,6 +35,17 @@ spec:
           spec:
             description: KedaSpec defines the desired state of Keda
             properties:
+              backend:
+                properties:
+                  type:
+                    description: BackendType TODO(marcobebway)
+                    enum:
+                    - nats
+                    - jetstream
+                    type: string
+                required:
+                - type
+                type: object
               env:
                 items:
                   properties:
@@ -138,6 +149,8 @@ spec:
                         type: object
                     type: object
                 type: object
+            required:
+            - backend
             type: object
           status:
             description: Status defines the observed state of CustomObject.
