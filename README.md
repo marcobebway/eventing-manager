@@ -1,39 +1,250 @@
-> **NOTE:** It is a general template that can be used for a project README.md, example README.md, or any other README.md type in all Kyma repositories in the Kyma organization. Not all the sections are mandatory. Use only those that suit your use case but keep the proposed section order.
+# Keda Manager
 
-# {Project Title} (mandatory)
+## Overview
 
-> Modify the title and insert the name of your project. Use Heading 1 (H1).
+Keda Manager is a module compatible with Lifecycle Manager that allows you to add KEDA Event Driven Autoscaler to the Kyma ecosystem. 
 
-## Overview (mandatory)
-
-> Provide a description of the project's functionality.
->
-> If it is an example README.md, describe what the example illustrates.
+See also:
+- [lifecycle-manager documetation](https://github.com/kyma-project/lifecycle-manager)
+- [KEDA documentation](https://keda.sh/docs/2.7/concepts/)
 
 ## Prerequisites
 
-> List the requirements to run the project or example.
+- Access to a k8s cluster
+- [kubectl](https://kubernetes.io/docs/tasks/tools/)
+- [kubebuilder](https://book.kubebuilder.io/)
 
-## Installation
+```bash
+# you could use one of the following options
 
-> Explain the steps to install your project. Create an ordered list for each installation task.
->
-> If it is an example README.md, describe how to build, run locally, and deploy the example. Format the example as code blocks and specify the language, highlighting where possible. Explain how you can validate that the example ran successfully. For example, define the expected output or commands to run which check a successful deployment.
->
-> Add subsections (H3) for better readability.
+# option 1: using brew
+brew install kubebuilder
 
-## Usage
+# option 2: fetch sources directly
+curl -L -o kubebuilder https://go.kubebuilder.io/dl/latest/$(go env GOOS)/$(go env GOARCH)
+chmod +x kubebuilder && mv kubebuilder /usr/local/bin/
+```
 
-> Explain how to use the project. You can create multiple subsections (H3). Include the instructions or provide links to the related documentation.
+## Manual `keda-manager` installation
 
-## Development
 
-> Add instructions on how to develop the project or example. It must be clear what to do and, for example, how to trigger the tests so that other contributors know how to make their pull requests acceptable. Include the instructions or provide links to related documentation.
+1. Clone project
 
-## Troubleshooting
+```bash
+git clone https://github.com/kyma-project/eventing-manager.git && cd keda-manager/
+```
 
-> List potential issues and provide tips on how to avoid or solve them. To structure the content, use the following sections:
->
-> - **Symptom**
-> - **Cause**
-> - **Remedy**
+2. Set `keda-manager` image name
+
+```bash
+export IMG=custom-keda-manager:0.0.1
+export K3D_CLUSTER_NAME=keda-manager-demo
+```
+
+3. Build project
+
+```bash
+make build
+```
+
+4. Build image
+
+```bash
+make docker-build
+```
+
+5. Push image to registry
+
+<div tabs name="Push image" group="keda-installation">
+  <details>
+  <summary label="k3d">
+  k3d
+  </summary>
+
+   ```bash
+   k3d image import $IMG -c $K3D_CLUSTER_NAME
+   ```
+  </details>
+  <details>
+  <summary label="Docker registry">
+  Globally available Docker registry
+  </summary>
+
+   ```bash
+   make docker-push
+   ```
+
+  </details>
+</div>
+
+6. Deploy
+
+```bash
+make deploy
+```
+
+## Using `keda-manager`
+
+- Create Keda instance
+
+```bash
+kubectl apply -f config/samples/operator_v1alpha1_keda.yaml
+```
+
+- Delete Keda instance
+
+```bash
+kubectl delete -f config/samples/operator_v1alpha1_keda.yaml
+```
+
+- Update Keda properties
+
+This example shows how you can modify the Keda logging level using the `keda.operator.kyma-project.io` CR
+
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: operator.kyma-project.io/v1alpha1
+kind: Keda
+metadata:
+  name: keda-sample
+spec:
+  logging:
+    operator:
+      level: "info"
+EOF
+```
+
+## Installation in modular Kyma on the local k3d cluster
+
+>>NOTE: The following steps are scripted in form of make targets. You can execute all the steps by calling `make run` target from `hack/local` folder.
+
+1. Setup local k3d cluster and local Docker registry
+
+# Provision k3d cluster
+
+```bash
+kyma provision k3d 
+```
+2. Add the `etc/hosts` entry for the local `k3d-kyma-registry`.
+
+```
+127.0.0.1 k3d-kyma-registry.localhost
+127.0.0.1 k3d-kyma-registry
+```
+
+3. Build Keda Manager image
+```bash
+make module-image IMG_REGISTRY=k3d-kyma-registry:5001/unsigned/operator-images
+```
+
+This builds a Docker image for Keda Manager and pushes it to the registry and path, as defined in `IMG_REGISTRY`.
+
+4. Build Keda module
+```bash
+make module-build IMG_REGISTRY=k3d-kyma-registry:5001/unsigned/operator-images MODULE_REGISTRY=k3d-kyma-registry.localhost:5001/unsigned
+```
+
+This builds an OCI image for Keda module and pushes it to the registry and path, as defined in `MODULE_REGISTRY`.
+
+5. Verify if the module and the manager's image are pushed to the local registry
+
+```bash
+curl k3d-kyma-registry.localhost:5001/v2/_catalog
+{"repositories":["unsigned/component-descriptors/kyma.project.io/module/keda","unsigned/operator-images/keda-operator"]}
+```
+
+7. Inpect the generated module template
+
+The following are temporary workarounds.
+
+Edit the `template.yaml` file and:
+
+ - change `target` to `control-plane`
+>**NOTE:** This is only required in the single cluster mode
+
+```yaml
+spec:
+  target: control-plane
+```
+
+- change the existing repository context in `spec.descriptor.component`:
+>**NOTE:** Because Pods inside the k3d cluster use the docker-internal port of the registry, it tries to resolve the registry against port 5000 instead of 5001. K3d has registry aliases but module-manager is not part of k3d and thus does not know how to properly alias `k3d-kyma-registry.localhost:5001`
+
+```yaml
+repositoryContexts:                                                                           
+- baseUrl: k3d-kyma-registry.localhost:5000/unsigned                                                   
+  componentNameMapping: urlPath                                                               
+  type: ociRegistry
+```
+
+8. Install modular Kyma on the k3d cluster
+
+This installs the latest versions of `module-manager` and `lifecycle-manager`
+
+You can use the `--template` flag to deploy the Keda module manifest from the beginning or apply it using kubectl later.
+
+```bash
+kyma alpha deploy  --template=./template.yaml
+
+- Kustomize ready
+- Lifecycle Manager deployed
+- Module Manager deployed
+- Modules deployed
+- Kyma CR deployed
+- Kyma deployed successfully!
+
+Kyma is installed in version:
+Kyma installation took:		18 seconds
+
+Happy Kyma-ing! :)
+```
+
+Kyma installation is ready, but no module is activated yet
+```bash
+kubectl get kymas.operator.kyma-project.io -A
+NAMESPACE    NAME           STATE   AGE
+kcp-system   default-kyma   Ready   71s
+```
+
+Keda Module is a known module, but not activated
+```bash
+kubectl get moduletemplates.operator.kyma-project.io -A 
+NAMESPACE    NAME                  AGE
+kcp-system   moduletemplate-keda   2m24s
+```
+
+9. Give Module Manager permission to install CustomResourceDefinition (CRD) cluster-wide
+
+>**NOTE:** This is a temporary workaround and is only required in the single-cluster mode
+
+Module-manager must be able to apply CRDs to install modules. In the remote mode (with control-plane managing remote clusters) it gets an administrative kubeconfig, targeting the remote cluster to do so. But in local mode (single-cluster mode), it uses Service Account and does not have permission to create CRDs by default.
+
+Run the following to make sure the module manager's Service Account becomes an administrative role:
+
+```bash
+kubectl edit clusterrole module-manager-manager-role
+```
+add
+```yaml
+- apiGroups:                                                                                                                  
+  - "*"                                                                                                                       
+  resources:                                                                                                                  
+  - "*"                                                                                                                       
+  verbs:                                                                                                                      
+  - "*"
+```
+
+10. Enable Keda in Kyma
+
+Edit Kyma CR ...
+
+```bash
+kubectl edit kymas.operator.kyma-project.io -n kcp-system default-kyma
+```
+..to add Keda module
+
+```yaml
+spec:
+  modules:
+  - name: keda
+```
