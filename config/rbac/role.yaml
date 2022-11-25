@@ -82,7 +82,11 @@ rules:
   - replicasets
   - statefulsets
   verbs:
+  - create
+  - delete
   - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - autoscaling
@@ -106,21 +110,6 @@ rules:
   - external.metrics.k8s.io
   resources:
   - '*'
-  verbs:
-  - '*'
-- apiGroups:
-  - keda.sh
-  resources:
-  - clustertriggerauthentications
-  - clustertriggerauthentications/status
-  - scaledjobs
-  - scaledjobs/finalizers
-  - scaledjobs/status
-  - scaledobjects
-  - scaledobjects/finalizers
-  - scaledobjects/status
-  - triggerauthentications
-  - triggerauthentications/status
   verbs:
   - '*'
 - apiGroups:
