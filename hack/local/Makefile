@@ -15,7 +15,7 @@ run: run-k3d-with-keda busola-enable
 
 .PHONY: test
 test: run verify
-	@echo '### keda operator opertational'
+	@echo '### keda operator operational'
 
 .PHONY: stop
 stop:

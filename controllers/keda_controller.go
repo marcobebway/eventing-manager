@@ -21,16 +21,14 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/kyma-project/module-manager/operator/pkg/declarative"
-	"github.com/kyma-project/module-manager/operator/pkg/types"
-
-	"k8s.io/client-go/rest"
-
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/eventing-manager/api/v1alpha1"
+	"github.com/kyma-project/module-manager/operator/pkg/declarative"
+	"github.com/kyma-project/module-manager/operator/pkg/types"
 )
 
 const (
@@ -40,10 +38,10 @@ const (
 // KedaReconciler reconciles a Keda object
 type KedaReconciler struct {
 	declarative.ManifestReconciler
-	client.Client
-	Scheme *runtime.Scheme
-	*rest.Config
+	Scheme    *runtime.Scheme
 	ChartPath string
+	client.Client
+	*rest.Config
 }
 
 //+kubebuilder:rbac:groups="*",resources="*",verbs=get

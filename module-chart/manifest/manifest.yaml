@@ -1,0 +1,296 @@
+---
+# Source: eventing/charts/nats/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-nats-config
+  namespace: "kyma-system"
+  labels:
+    helm.sh/chart: nats-0.17.3
+    app.kubernetes.io/name: nats
+    app.kubernetes.io/instance: test
+    kyma-project.io/dashboard: eventing
+    app.kubernetes.io/managed-by: Helm
+data:
+  nats.conf: |
+    # NATS Clients Port
+    port: 4222
+
+    # PID file shared with configuration reloader.
+    pid_file: "/var/run/nats/nats.pid"
+
+    ###############
+    #             #
+    # Monitoring  #
+    #             #
+    ###############
+    http: 8222
+    server_name: $POD_NAME
+
+    ###################################
+    #                                 #
+    # NATS JetStream                  #
+    #                                 #
+    ###################################
+    jetstream {
+      max_mem: 1Gi
+      store_dir: /data
+
+      max_file:1Gi
+    }
+    debug: true
+    trace:  true
+    lame_duck_grace_period: 10s
+    lame_duck_duration: 120s
+---
+# Source: eventing/charts/nats/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-nats
+  namespace: "kyma-system"
+  labels:
+    helm.sh/chart: nats-0.17.3
+    app.kubernetes.io/name: nats
+    app.kubernetes.io/instance: test
+    kyma-project.io/dashboard: eventing
+    app.kubernetes.io/managed-by: Helm
+spec:
+  selector:
+    app.kubernetes.io/name: nats
+    app.kubernetes.io/instance: test
+    kyma-project.io/dashboard: eventing
+  clusterIP: None
+  ports:
+  - name: client
+    port: 4222
+    appProtocol: tcp
+  - name: cluster
+    port: 6222
+    appProtocol: tcp
+  - name: monitor
+    port: 8222
+    appProtocol: http
+  - name: metrics
+    port: 7777
+    appProtocol: http
+  - name: leafnodes
+    port: 7422
+    appProtocol: tcp
+  - name: gateways
+    port: 7522
+    appProtocol: tcp
+---
+# Source: eventing/charts/nats/templates/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: test-nats
+  namespace: "kyma-system"
+  labels:
+    helm.sh/chart: nats-0.17.3
+    app.kubernetes.io/name: nats
+    app.kubernetes.io/instance: test
+    kyma-project.io/dashboard: eventing
+    app.kubernetes.io/managed-by: Helm
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nats
+      app.kubernetes.io/instance: test
+      kyma-project.io/dashboard: eventing
+  replicas: 1
+  serviceName: test-nats
+
+  podManagementPolicy: OrderedReady
+
+  template:
+    metadata:
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "7777"
+        prometheus.io/scrape: "true"
+        sidecar.istio.io/inject: "false"
+      labels:
+        app.kubernetes.io/name: nats
+        app.kubernetes.io/instance: test
+        kyma-project.io/dashboard: eventing
+        
+        nats_cluster: eventing-nats
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  nats_cluster: eventing-nats
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      # Common volumes for the containers.
+      volumes:
+      - name: config-volume
+        configMap:
+          name: test-nats-config
+
+      # Local volume shared with the reloader.
+      - name: pid
+        emptyDir: {}
+
+      # Required to be able to HUP signal and apply config
+      # reload to the server without restarting the pod.
+      shareProcessNamespace: true
+
+      #################
+      #               #
+      #  NATS Server  #
+      #               #
+      #################
+      terminationGracePeriodSeconds: 150
+      containers:
+      #################################
+      #                               #
+      #  NATS Configuration Reloader  #
+      #                               #
+      #################################
+      - name: config-reloader
+        image: "eu.gcr.io/kyma-project/external/natsio/nats-server-config-reloader:0.7.2"
+        imagePullPolicy: IfNotPresent
+        command:
+          - "nats-server-config-reloader"
+          - "-pid"
+          - "/var/run/nats/nats.pid"
+          - "-config"
+          - "/etc/nats-config/nats.conf"
+        volumeMounts:
+          - name: config-volume
+            mountPath: /etc/nats-config
+          - name: pid
+            mountPath: /var/run/nats
+
+      ##############################
+      #                            #
+      #  NATS Prometheus Exporter  #
+      #                            #
+      ##############################
+      - name: metrics
+        image: "eu.gcr.io/kyma-project/external/natsio/prometheus-nats-exporter:0.10.1"
+        imagePullPolicy: IfNotPresent
+        resources:
+          {}
+        args:
+        - -connz
+        - -routez
+        - -subz
+        - -varz
+        - -prefix=nats
+        - -use_internal_server_id
+        - -jsz=all
+        - http://localhost:8222/
+        ports:
+          - containerPort: 7777
+            name: metrics
+      - name: nats
+        image: "eu.gcr.io/kyma-project/external/nats:2.9.6-alpine3.16"
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+        resources:
+          limits:
+            cpu: 20m
+            memory: 64Mi
+          requests:
+            cpu: 5m
+            memory: 16Mi
+        ports:
+        - containerPort: 4222
+          name: client
+        - containerPort: 7422
+          name: leafnodes
+        - containerPort: 7522
+          name: gateways
+        - containerPort: 6222
+          name: cluster
+        - containerPort: 8222
+          name: monitor
+        - containerPort: 7777
+          name: metrics
+
+        command:
+         - "nats-server"
+         - "--config"
+         - "/etc/nats-config/nats.conf"
+
+        # Required to be able to define an environment variable
+        # that refers to other environment variables.  This env var
+        # is later used as part of the configuration file.
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: CLUSTER_ADVERTISE
+          value: $(POD_NAME).test-nats.$(POD_NAMESPACE).svc.cluster.local
+        volumeMounts:
+          - name: config-volume
+            mountPath: /etc/nats-config
+          - name: pid
+            mountPath: /var/run/nats
+          - name: test-nats-js-pvc
+            mountPath: /data
+
+        #######################
+        #                     #
+        # Healthcheck Probes  #
+        #                     #
+        #######################
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8222
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+          periodSeconds: 30
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8222
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+
+        # Gracefully stop NATS Server on pod deletion or image upgrade.
+        #
+        lifecycle:
+          preStop:
+            exec:
+              # send the lame duck shutdown signal to trigger a graceful shutdown
+              # nats-server will ignore the TERM signal it receives after this
+              #
+              command:
+              - "nats-server"
+              - "-sl=ldm=/var/run/nats/nats.pid"
+
+  volumeClaimTemplates:
+  #####################################
+  #                                   #
+  #  Jetstream New Persistent Volume  #
+  #                                   #
+  #####################################
+    - metadata:
+        name: test-nats-js-pvc
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
