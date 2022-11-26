@@ -110,20 +110,7 @@ func (m *ManifestResolver) Get(obj types.BaseCustomObject, l logr.Logger) (types
 	if err != nil {
 		return types.InstallationSpec{}, fmt.Errorf("resolving manifest failed: %w", err)
 	}
-
-	f := Flags{
-		Eventing: Eventing{
-			Nats: Nats{
-				Cluster: Cluster{
-					Enabled:  true,
-					Replicas: 2,
-				},
-			},
-		},
-	}
-	flags, _ = structToFlags(f)
-
-	l.Info("<<< Flags >>>", "map", flags)
+	_ = flags
 
 	return types.InstallationSpec{
 		ChartPath: m.chartPath,
@@ -132,26 +119,11 @@ func (m *ManifestResolver) Get(obj types.BaseCustomObject, l logr.Logger) (types
 				"Namespace":       chartNs,
 				"CreateNamespace": true,
 			},
-			SetFlags: flags,
+			SetFlags: types.Flags{
+				"nameOverride": "eventing-nats",
+			},
 		},
 	}, nil
-}
-
-type Flags struct {
-	Eventing Eventing `json:"eventing"`
-}
-
-type Eventing struct {
-	Nats Nats `json:"nats"`
-}
-
-type Nats struct {
-	Cluster Cluster `json:"cluster"`
-}
-
-type Cluster struct {
-	Enabled  bool `json:"enabled"`
-	Replicas int  `json:"replicas"`
 }
 
 /*

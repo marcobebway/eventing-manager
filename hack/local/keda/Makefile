@@ -75,7 +75,7 @@ install-module:
 		--kustomization https://github.com/kyma-project/module-manager/config/default@main
 
 .PHONY: run
-run: kyma create-k3d module-image patch-coredns module-build fix-template install-module patch-mod-mgr-role enable-module verify
+run: hot-build kyma create-k3d module-image patch-coredns module-build fix-template install-module patch-mod-mgr-role enable-module verify
 
 .PHONY: stop
 stop: delete-k3d
@@ -83,3 +83,7 @@ stop: delete-k3d
 .PHONY: verify
 verify:
 	@${PROJECT_ROOT}/hack/verify_kyma_status.sh
+
+.PHONY: hot-build
+hot-build:
+	@make -C ${PROJECT_ROOT} build
