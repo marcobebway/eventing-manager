@@ -25,6 +25,7 @@ testbin/*
 /bin
 /charts
 /vendor
+/module-chart/manifest
 default.yaml
 template.yaml
 template-k3d.yaml

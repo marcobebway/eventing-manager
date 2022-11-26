@@ -169,10 +169,10 @@ func (h *testHelper) createGetKubernetesObjectFunc(serviceAccountName string, ob
 	}
 }
 
-func (h *testHelper) updateDeploymentStatus(deploymentName string) {
-	By(fmt.Sprintf("Updating deployment status: %s", deploymentName))
-	var deployment appsv1.StatefulSet
-	Eventually(h.createGetKubernetesObjectFunc(deploymentName, &deployment)).
+func (h *testHelper) updateDeploymentStatus(statefulSetName string) {
+	By(fmt.Sprintf("Updating deployment status: %s", statefulSetName))
+	var sts appsv1.StatefulSet
+	Eventually(h.createGetKubernetesObjectFunc(statefulSetName, &sts)).
 		WithPolling(time.Second * 2).
 		WithTimeout(time.Second * 10).
 		Should(BeTrue())
@@ -183,10 +183,11 @@ func (h *testHelper) updateDeploymentStatus(deploymentName string) {
 	//	Reason:  "test-reason",
 	//	Message: "test-message",
 	//})
-	deployment.Status.Replicas = 1
-	Expect(k8sClient.Status().Update(h.ctx, &deployment)).To(Succeed())
 
-	replicaSetName := h.createReplicaSetForDeployment(deployment)
+	sts.Status.Replicas = 1
+	Expect(k8sClient.Status().Update(h.ctx, &sts)).To(Succeed())
+
+	replicaSetName := h.createReplicaSetForDeployment(sts)
 
 	var replicaSet appsv1.ReplicaSet
 	Eventually(h.createGetKubernetesObjectFunc(replicaSetName, &replicaSet)).
@@ -198,7 +199,7 @@ func (h *testHelper) updateDeploymentStatus(deploymentName string) {
 	replicaSet.Status.Replicas = 1
 	Expect(k8sClient.Status().Update(h.ctx, &replicaSet)).To(Succeed())
 
-	By(fmt.Sprintf("Deployment status updated: %s", deploymentName))
+	By(fmt.Sprintf("StatefulSet status updated: %s", statefulSetName))
 }
 
 func (h *testHelper) createReplicaSetForDeployment(deployment appsv1.StatefulSet) string {
