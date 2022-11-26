@@ -5,17 +5,16 @@ import (
 	"fmt"
 	"time"
 
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	rtypes "github.com/kyma-project/module-manager/operator/pkg/types"
-
-	"github.com/kyma-project/eventing-manager/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/eventing-manager/api/v1alpha1"
+	rtypes "github.com/kyma-project/module-manager/operator/pkg/types"
 )
 
 var _ = Describe("Keda controller", func() {

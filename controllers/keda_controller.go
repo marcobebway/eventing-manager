@@ -120,7 +120,10 @@ func (m *ManifestResolver) Get(obj types.BaseCustomObject, l logr.Logger) (types
 				"CreateNamespace": true,
 			},
 			SetFlags: types.Flags{
-				"nameOverride": "eventing-nats",
+				"nameOverride":         "eventing-nats-01",
+				".nameOverride":        "eventing-nats-02",
+				"Values.nameOverride":  "eventing-nats-03",
+				".Values.nameOverride": "eventing-nats-04",
 			},
 		},
 	}, nil
