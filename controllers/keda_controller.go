@@ -100,17 +100,16 @@ type ManifestResolver struct {
 }
 
 // Get returns the chart information to be processed.
-func (m *ManifestResolver) Get(obj types.BaseCustomObject, l logr.Logger) (types.InstallationSpec, error) {
-	sample, valid := obj.(*v1alpha1.Keda)
+func (m *ManifestResolver) Get(obj types.BaseCustomObject, _ logr.Logger) (types.InstallationSpec, error) {
+	keda, valid := obj.(*v1alpha1.Keda)
 	if !valid {
 		return types.InstallationSpec{}, fmt.Errorf("invalid type conversion for %s", client.ObjectKeyFromObject(obj))
 	}
 
-	flags, err := structToFlags(sample.Spec)
+	flags, err := structToFlags(keda.Spec)
 	if err != nil {
 		return types.InstallationSpec{}, fmt.Errorf("resolving manifest failed: %w", err)
 	}
-	_ = flags
 
 	return types.InstallationSpec{
 		ChartPath: m.chartPath,
@@ -119,18 +118,7 @@ func (m *ManifestResolver) Get(obj types.BaseCustomObject, l logr.Logger) (types
 				"Namespace":       chartNs,
 				"CreateNamespace": true,
 			},
-			SetFlags: types.Flags{
-				"nameOverride":         "eventing-nats-01",
-				".nameOverride":        "eventing-nats-02",
-				"Values.nameOverride":  "eventing-nats-03",
-				".Values.nameOverride": "eventing-nats-04",
-			},
+			SetFlags: flags,
 		},
 	}, nil
 }
-
-/*
-.Values.cluster.enabled
-.Values.cluster.replicas
-eventing.nats.nats.jetstream.fileStorage.storageClassName
-*/
