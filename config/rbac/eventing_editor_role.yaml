@@ -1,13 +1,13 @@
-# permissions for end users to edit kedas.
+# permissions for end users to edit eventings.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: keda-editor-role
+  name: eventing-editor-role
 rules:
 - apiGroups:
   - operator.kyma-project.io
   resources:
-  - kedas
+  - eventings
   verbs:
   - create
   - delete
@@ -19,6 +19,6 @@ rules:
 - apiGroups:
   - operator.kyma-project.io
   resources:
-  - kedas/status
+  - eventings/status
   verbs:
   - get

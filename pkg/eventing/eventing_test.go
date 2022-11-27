@@ -1,4 +1,4 @@
-package keda
+package eventing
 
 import (
 	"testing"
@@ -10,7 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func TestHasExistingKedaInstallation(t *testing.T) {
+func TestHasExistingEventingInstallation(t *testing.T) {
 	logger := logr.Discard()
 	tests := []struct {
 		name    string
@@ -25,7 +25,7 @@ func TestHasExistingKedaInstallation(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "No deployment on the cluster matching the Keda Labels",
+			name: "No deployment on the cluster matching the Eventing Labels",
 			c: fake.NewFakeClient(
 				&appsv1.StatefulSet{
 					ObjectMeta: metav1.ObjectMeta{Name: "d1", Labels: map[string]string{"test": "test"}},
@@ -35,20 +35,20 @@ func TestHasExistingKedaInstallation(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "One deployment with Keda matching Labels",
+			name: "One deployment with Eventing matching Labels",
 			c: fake.NewFakeClient(
 				&appsv1.StatefulSet{
-					ObjectMeta: metav1.ObjectMeta{Name: "d1", Labels: kedaCoreLabels},
+					ObjectMeta: metav1.ObjectMeta{Name: "d1", Labels: eventingLabels},
 				},
 			),
 			want:    true,
 			wantErr: false,
 		},
 		{
-			name: "Multiple deployments with Keda matching Labels",
+			name: "Multiple deployments with Eventing matching Labels",
 			c: fake.NewFakeClient(
-				&appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{Name: "d1", Labels: kedaCoreLabels}},
-				&appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{Name: "d2", Labels: kedaCoreLabels}},
+				&appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{Name: "d1", Labels: eventingLabels}},
+				&appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{Name: "d2", Labels: eventingLabels}},
 			),
 			want:    true,
 			wantErr: false,
@@ -57,7 +57,7 @@ func TestHasExistingKedaInstallation(t *testing.T) {
 			name: "One deployment with partially matching labels",
 			c: fake.NewFakeClient(
 				&appsv1.StatefulSet{
-					ObjectMeta: metav1.ObjectMeta{Name: "d1", Labels: map[string]string{"app": "keda-operator", "test": "test"}},
+					ObjectMeta: metav1.ObjectMeta{Name: "d1", Labels: map[string]string{"app": "eventing-operator", "test": "test"}},
 				},
 			),
 			want:    false,
@@ -68,11 +68,11 @@ func TestHasExistingKedaInstallation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := isInstalledWithClient(tt.c, logger)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("HasExistingKedaInstallation() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("HasExistingEventingInstallation() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("HasExistingKedaInstallation() = %v, want %v", got, tt.want)
+				t.Errorf("HasExistingEventingInstallation() = %v, want %v", got, tt.want)
 			}
 		})
 	}

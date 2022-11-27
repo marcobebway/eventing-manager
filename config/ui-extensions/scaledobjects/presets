@@ -1,6 +1,6 @@
 - name: CPU Consumption Triggered
   value:
-    apiVersion: keda.sh/v1alpha1
+    apiVersion: eventing.sh/v1alpha1
     kind: ScaledObject
     metadata:
       name: ''
@@ -14,7 +14,7 @@
           value: '50'
 - name: Prometheus Triggered
   value:
-    apiVersion: keda.sh/v1alpha1
+    apiVersion: eventing.sh/v1alpha1
     kind: ScaledObject
     metadata:
       name: ''

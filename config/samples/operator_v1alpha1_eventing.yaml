@@ -1,9 +1,9 @@
 apiVersion: operator.kyma-project.io/v1alpha1
-kind: Keda
+kind: Eventing
 metadata:
   labels:
-    operator.kyma-project.io/kyma-name: keda-sample
-  name: keda-sample
+    operator.kyma-project.io/kyma-name: eventing-sample
+  name: eventing-sample
 spec:
   backend:
     type: "nats"

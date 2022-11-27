@@ -17,8 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/kyma-project/module-manager/operator/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kyma-project/module-manager/operator/pkg/types"
 )
 
 // BackendType is the supported Eventing backend type.
@@ -35,46 +36,46 @@ type BackendSpec struct {
 	Type BackendType `json:"type"`
 }
 
-// KedaSpec defines the desired state of Keda
-type KedaSpec struct {
+// EventingSpec defines the desired state of Eventing
+type EventingSpec struct {
 	BackendSpec BackendSpec `json:"backend"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// Keda is the Schema for the kedas API
-type Keda struct {
+// Eventing is the Schema for the eventings API
+type Eventing struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   KedaSpec     `json:"spec,omitempty"`
+	Spec   EventingSpec `json:"spec,omitempty"`
 	Status types.Status `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// KedaList contains a list of Keda
-type KedaList struct {
+// EventingList contains a list of Eventing
+type EventingList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Keda `json:"items"`
+	Items           []Eventing `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Keda{}, &KedaList{})
+	SchemeBuilder.Register(&Eventing{}, &EventingList{})
 }
 
-var _ types.CustomObject = &Keda{}
+var _ types.CustomObject = &Eventing{}
 
-func (s *Keda) GetStatus() types.Status {
-	return s.Status
+func (in *Eventing) GetStatus() types.Status {
+	return in.Status
 }
 
-func (s *Keda) SetStatus(status types.Status) {
-	s.Status = status
+func (in *Eventing) SetStatus(status types.Status) {
+	in.Status = status
 }
 
-func (s *Keda) ComponentName() string {
-	return "keda"
+func (in *Eventing) ComponentName() string {
+	return "eventing"
 }

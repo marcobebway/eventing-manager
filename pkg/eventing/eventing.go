@@ -1,4 +1,4 @@
-package keda
+package eventing
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	kedaCoreLabels = map[string]string{
+	eventingLabels = map[string]string{
 		"app.kubernetes.io/instance": "eventing",
 		"app.kubernetes.io/name":     "nats",
 	}
@@ -27,7 +27,7 @@ func IsInstalled(config *rest.Config, logger logr.Logger) (bool, error) {
 
 func isInstalledWithClient(c client.Client, logger logr.Logger) (bool, error) {
 	// use multiple label matches to be sure.
-	matchingLabels := client.MatchingLabels(kedaCoreLabels)
+	matchingLabels := client.MatchingLabels(eventingLabels)
 	listOpts := &client.ListOptions{}
 	matchingLabels.ApplyToList(listOpts)
 

@@ -35,8 +35,8 @@ const (
 	chartNs = "kyma-system"
 )
 
-// KedaReconciler reconciles a Keda object
-type KedaReconciler struct {
+// EventingReconciler reconciles a Eventing object
+type EventingReconciler struct {
 	declarative.ManifestReconciler
 	Scheme    *runtime.Scheme
 	ChartPath string
@@ -58,26 +58,26 @@ type KedaReconciler struct {
 //+kubebuilder:rbac:groups=batch,resources=jobs,verbs="*"
 //+kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs="*"
 //+kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers,verbs="*"
-//+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kedas,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kedas/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kedas/finalizers,verbs=update;patch
+//+kubebuilder:rbac:groups=operator.kyma-project.io,resources=eventings,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=operator.kyma-project.io,resources=eventings/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=operator.kyma-project.io,resources=eventings/finalizers,verbs=update;patch
 
 // initReconciler injects the required configuration into the declarative reconciler.
-func (r *KedaReconciler) initReconciler(mgr ctrl.Manager) error {
+func (r *EventingReconciler) initReconciler(mgr ctrl.Manager) error {
 	manifestResolver := &ManifestResolver{chartPath: r.ChartPath}
-	return r.Inject(mgr, &v1alpha1.Keda{},
+	return r.Inject(mgr, &v1alpha1.Eventing{},
 		declarative.WithManifestResolver(manifestResolver),
 		declarative.WithResourcesReady(true),
 	)
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *KedaReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *EventingReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Config = mgr.GetConfig()
 	if err := r.initReconciler(mgr); err != nil {
 		return err
 	}
-	return ctrl.NewControllerManagedBy(mgr).For(&v1alpha1.Keda{}).Complete(r)
+	return ctrl.NewControllerManagedBy(mgr).For(&v1alpha1.Eventing{}).Complete(r)
 }
 
 func structToFlags(obj interface{}) (types.Flags, error) {
@@ -101,12 +101,12 @@ type ManifestResolver struct {
 
 // Get returns the chart information to be processed.
 func (m *ManifestResolver) Get(obj types.BaseCustomObject, _ logr.Logger) (types.InstallationSpec, error) {
-	keda, valid := obj.(*v1alpha1.Keda)
+	eventing, valid := obj.(*v1alpha1.Eventing)
 	if !valid {
 		return types.InstallationSpec{}, fmt.Errorf("invalid type conversion for %s", client.ObjectKeyFromObject(obj))
 	}
 
-	flags, err := structToFlags(keda.Spec)
+	flags, err := structToFlags(eventing.Spec)
 	if err != nil {
 		return types.InstallationSpec{}, fmt.Errorf("resolving manifest failed: %w", err)
 	}

@@ -1,13 +1,13 @@
-# permissions for end users to view kedas.
+# permissions for end users to view eventings.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: keda-viewer-role
+  name: eventing-viewer-role
 rules:
 - apiGroups:
   - operator.kyma-project.io
   resources:
-  - kedas
+  - eventings
   verbs:
   - get
   - list
@@ -15,7 +15,7 @@ rules:
 - apiGroups:
   - operator.kyma-project.io
   resources:
-  - kedas/status
+  - eventings/status
   verbs:
   - get
 - apiGroups:
@@ -24,4 +24,3 @@ rules:
   - customresourcedefinitions
   verbs:
   - get
-

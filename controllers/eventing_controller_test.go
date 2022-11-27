@@ -17,17 +17,17 @@ import (
 	rtypes "github.com/kyma-project/module-manager/operator/pkg/types"
 )
 
-var _ = Describe("Keda controller", func() {
+var _ = Describe("Eventing controller", func() {
 	Context("When creating fresh instance", func() {
 		const (
 			namespaceName = "kyma-system"
-			kedaName      = "test"
+			eventingName  = "test"
 			operatorName  = "test-nats"
 		)
 
 		var (
-			kedaStatefulSetName = operatorName
-			kedaSpec            = v1alpha1.KedaSpec{
+			eventingStatefulSetName = operatorName
+			EventingSpec            = v1alpha1.EventingSpec{
 				BackendSpec: v1alpha1.BackendSpec{
 					Type: v1alpha1.BackendTypeNats,
 				},
@@ -43,82 +43,63 @@ var _ = Describe("Keda controller", func() {
 
 			// operations like C(R)UD can be tested in separated tests,
 			// but we have time-consuming flow and decided do it in one test
-			shouldCreateKeda(h, kedaName, kedaStatefulSetName, kedaSpec)
+			shouldCreateEventing(h, eventingName, eventingStatefulSetName, EventingSpec)
 
-			shouldPropagateKedaCrdSpecProperties(h, kedaStatefulSetName, kedaSpec)
+			shouldPropagateEventingCrdSpecProperties(h, eventingStatefulSetName, EventingSpec)
 
 			//TODO: disabled because of bug in operator (https://github.com/kyma-project/module-manager/issues/94)
-			//shouldUpdateKeda(h, kedaName, kedaStatefulSetName)
+			//shouldUpdateEventing(h, eventingName, eventingStatefulSetName)
 
-			shouldDeleteKeda(h, kedaName)
+			shouldDeleteEventing(h, eventingName)
 		})
 	})
 })
 
-func shouldCreateKeda(h testHelper, kedaName, kedaStatefulSetName string, kedaSpec v1alpha1.KedaSpec) {
+func shouldCreateEventing(h testHelper, eventingName, eventingStatefulSetName string, EventingSpec v1alpha1.EventingSpec) {
 	// act
-	h.createKeda(kedaName, kedaSpec)
+	h.createEventing(eventingName, EventingSpec)
 
 	// we have to update statefulSet status manually
-	h.updateStatefulSetStatus(kedaStatefulSetName)
+	h.updateStatefulSetStatus(eventingStatefulSetName)
 
 	// assert
-	Eventually(h.createGetKedaStateFunc(kedaName)).
+	Eventually(h.createGetEventingStateFunc(eventingName)).
 		WithPolling(time.Second * 2).
 		WithTimeout(time.Second * 20).
 		Should(Equal(rtypes.StateReady)) // TODO(marcobebway) create a pod by hand to make this succeed
 }
 
-func shouldUpdateKeda(h testHelper, kedaName string, kedaDeploymentName string) {
-	// arrange
-	var keda v1alpha1.Keda
-	Eventually(h.createGetKubernetesObjectFunc(kedaName, &keda)).
-		WithPolling(time.Second * 2).
-		WithTimeout(time.Second * 10).
-		Should(BeTrue())
-
-	// act
-	Expect(k8sClient.Update(h.ctx, &keda)).To(Succeed())
-
-	// assert
-	var deployment appsv1.Deployment
-	Eventually(h.createGetKubernetesObjectFunc(kedaDeploymentName, &deployment)).
-		WithPolling(time.Second * 2).
-		WithTimeout(time.Second * 10).
-		Should(BeTrue())
-}
-
-func shouldDeleteKeda(h testHelper, kedaName string) {
+func shouldDeleteEventing(h testHelper, eventingName string) {
 	// initial assert
-	Expect(h.getKedaCount()).To(Equal(1))
-	kedaState, err := h.getKedaState(kedaName)
+	Expect(h.getEventingCount()).To(Equal(1))
+	eventingState, err := h.getEventingState(eventingName)
 	Expect(err).To(BeNil())
-	Expect(kedaState).To(Equal(rtypes.StateReady))
+	Expect(eventingState).To(Equal(rtypes.StateReady))
 
 	// act
-	var keda v1alpha1.Keda
-	Eventually(h.createGetKubernetesObjectFunc(kedaName, &keda)).
+	var eventing v1alpha1.Eventing
+	Eventually(h.createGetKubernetesObjectFunc(eventingName, &eventing)).
 		WithPolling(time.Second * 2).
 		WithTimeout(time.Second * 10).
 		Should(BeTrue())
-	Expect(k8sClient.Delete(h.ctx, &keda)).To(Succeed())
+	Expect(k8sClient.Delete(h.ctx, &eventing)).To(Succeed())
 
 	// assert
-	Eventually(h.getKedaCount).
+	Eventually(h.getEventingCount).
 		WithPolling(time.Second * 2).
 		WithTimeout(time.Second * 10).
 		Should(Equal(0))
 
 }
 
-func shouldPropagateKedaCrdSpecProperties(h testHelper, kedaStatefulSetName string, kedaSpec v1alpha1.KedaSpec) {
-	checkKedaCrdSpecPropertyPropagationToKedaStatefulSet(h, kedaStatefulSetName, kedaSpec)
+func shouldPropagateEventingCrdSpecProperties(h testHelper, eventingStatefulSetName string, EventingSpec v1alpha1.EventingSpec) {
+	checkEventingCrdSpecPropertyPropagationToEventingStatefulSet(h, eventingStatefulSetName, EventingSpec)
 }
 
-func checkKedaCrdSpecPropertyPropagationToKedaStatefulSet(h testHelper, kedaStatefulSetName string, kedaSpec v1alpha1.KedaSpec) {
+func checkEventingCrdSpecPropertyPropagationToEventingStatefulSet(h testHelper, eventingStatefulSetName string, EventingSpec v1alpha1.EventingSpec) {
 	// act
-	var kedaStatefulSet appsv1.StatefulSet
-	Eventually(h.createGetKubernetesObjectFunc(kedaStatefulSetName, &kedaStatefulSet)).
+	var eventingStatefulSet appsv1.StatefulSet
+	Eventually(h.createGetKubernetesObjectFunc(eventingStatefulSetName, &eventingStatefulSet)).
 		WithPolling(time.Second * 2).
 		WithTimeout(time.Second * 10).
 		Should(BeTrue())
@@ -129,30 +110,30 @@ type testHelper struct {
 	namespaceName string
 }
 
-func (h *testHelper) getKedaCount() int {
-	var objectList v1alpha1.KedaList
+func (h *testHelper) getEventingCount() int {
+	var objectList v1alpha1.EventingList
 	Expect(k8sClient.List(h.ctx, &objectList)).To(Succeed())
 	return len(objectList.Items)
 }
 
-func (h *testHelper) createGetKedaStateFunc(kedaName string) func() (rtypes.State, error) {
+func (h *testHelper) createGetEventingStateFunc(eventingName string) func() (rtypes.State, error) {
 	return func() (rtypes.State, error) {
-		return h.getKedaState(kedaName)
+		return h.getEventingState(eventingName)
 	}
 }
 
-func (h *testHelper) getKedaState(kedaName string) (rtypes.State, error) {
+func (h *testHelper) getEventingState(eventingName string) (rtypes.State, error) {
 	var emptyState = rtypes.State("")
-	var keda v1alpha1.Keda
+	var eventing v1alpha1.Eventing
 	key := types.NamespacedName{
-		Name:      kedaName,
+		Name:      eventingName,
 		Namespace: h.namespaceName,
 	}
-	err := k8sClient.Get(h.ctx, key, &keda)
+	err := k8sClient.Get(h.ctx, key, &eventing)
 	if err != nil {
 		return emptyState, err
 	}
-	return keda.Status.State, nil
+	return eventing.Status.State, nil
 }
 
 func (h *testHelper) createGetKubernetesObjectFunc(serviceAccountName string, obj client.Object) func() (bool, error) {
@@ -189,11 +170,11 @@ func (h *testHelper) updateStatefulSetStatus(statefulSetName string) {
 	By(fmt.Sprintf("StatefulSet status updated: %s", statefulSetName))
 }
 
-func (h *testHelper) createKeda(kedaName string, spec v1alpha1.KedaSpec) {
-	By(fmt.Sprintf("Creating crd: %s", kedaName))
-	keda := v1alpha1.Keda{
+func (h *testHelper) createEventing(eventingName string, spec v1alpha1.EventingSpec) {
+	By(fmt.Sprintf("Creating crd: %s", eventingName))
+	eventing := v1alpha1.Eventing{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      kedaName,
+			Name:      eventingName,
 			Namespace: h.namespaceName,
 			Labels: map[string]string{
 				"operator.kyma-project.io/kyma-name": "test",
@@ -201,8 +182,8 @@ func (h *testHelper) createKeda(kedaName string, spec v1alpha1.KedaSpec) {
 		},
 		Spec: spec,
 	}
-	Expect(k8sClient.Create(h.ctx, &keda)).To(Succeed())
-	By(fmt.Sprintf("Crd created: %s", kedaName))
+	Expect(k8sClient.Create(h.ctx, &eventing)).To(Succeed())
+	By(fmt.Sprintf("Crd created: %s", eventingName))
 }
 
 func (h *testHelper) createNamespace() {

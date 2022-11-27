@@ -1,6 +1,6 @@
-.PHONY: run-k3d-with-keda
-run-k3d-with-keda:
-	@make -C ./keda run
+.PHONY: run-k3d-with-eventing
+run-k3d-with-eventing:
+	@make -C ./eventing run
 
 .PHONY: busola-enable
 busola-enable:
@@ -8,15 +8,15 @@ busola-enable:
 
 .PHONY: verify
 verify:
-	@make -C ./keda verify
+	@make -C ./eventing verify
 
 .PHONY: run
-run: run-k3d-with-keda busola-enable
+run: run-k3d-with-eventing busola-enable
 
 .PHONY: test
 test: run verify
-	@echo '### keda operator operational'
+	@echo '### eventing operator operational'
 
 .PHONY: stop
 stop:
-	@make -C ./keda stop
+	@make -C ./eventing stop

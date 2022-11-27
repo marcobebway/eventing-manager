@@ -2,7 +2,7 @@ CLUSTER_NAME ?= kyma
 REGISTRY_PORT ?= 5001
 REGISTRY_NAME ?= ${CLUSTER_NAME}-registry
 
-MANAGER_IMAGE_NAME ?= keda-manager-dev-local
+MANAGER_IMAGE_NAME ?= eventing-manager-dev-local
 MANAGER_IMAGE_TAG ?= 0.0.1
 
 PROJECT_ROOT ?= ../../..

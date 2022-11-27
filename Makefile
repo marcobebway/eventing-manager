@@ -1,5 +1,5 @@
 # Module Name used for bundling the OCI Image and later on for referencing in the Kyma Modules
-MODULE_NAME ?= keda
+MODULE_NAME ?= eventing
 # Semantic Module Version used for identifying the build
 MODULE_VERSION ?= 0.0.4
 # Module Registry used for pushing the image
@@ -36,7 +36,7 @@ SHELL = /usr/bin/env bash -o pipefail
 
 
 # Image URL to use all building/pushing image targets
-APP_NAME = keda-manager
+APP_NAME = eventing-manager
 
 # Image URL to use all building/pushing image targets
 IMG_REGISTRY_PORT ?= $(MODULE_REGISTRY_PORT)

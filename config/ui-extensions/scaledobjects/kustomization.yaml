@@ -1,5 +1,5 @@
 configMapGenerator:
-- name: scaledobjects.keda.sh
+- name: scaledobjects.eventing.sh
   namespace: kube-public
   files:
   - general
@@ -10,6 +10,6 @@ configMapGenerator:
   options:
     disableNameSuffixHash: true
     labels:
-      app.kubernetes.io/name: scaledobjects.keda.sh
+      app.kubernetes.io/name: scaledobjects.eventing.sh
       busola.io/extension: resource
       busola.io/extension-version: "0.5"

@@ -40,7 +40,7 @@ data:
         simple: true
         required: true
         enum:
-        - keda
+        - eventing
       - path: "[].channel"
         enum:
         - rapid

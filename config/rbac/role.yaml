@@ -115,7 +115,7 @@ rules:
 - apiGroups:
   - operator.kyma-project.io
   resources:
-  - kedas
+  - eventings
   verbs:
   - create
   - delete
@@ -127,14 +127,14 @@ rules:
 - apiGroups:
   - operator.kyma-project.io
   resources:
-  - kedas/finalizers
+  - eventings/finalizers
   verbs:
   - patch
   - update
 - apiGroups:
   - operator.kyma-project.io
   resources:
-  - kedas/status
+  - eventings/status
   verbs:
   - get
   - patch

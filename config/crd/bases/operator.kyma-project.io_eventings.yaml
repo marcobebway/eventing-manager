@@ -5,20 +5,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
-  name: kedas.operator.kyma-project.io
+  name: eventings.operator.kyma-project.io
 spec:
   group: operator.kyma-project.io
   names:
-    kind: Keda
-    listKind: KedaList
-    plural: kedas
-    singular: keda
+    kind: Eventing
+    listKind: EventingList
+    plural: eventings
+    singular: eventing
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Keda is the Schema for the kedas API
+        description: Eventing is the Schema for the eventings API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -33,7 +33,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: KedaSpec defines the desired state of Keda
+            description: EventingSpec defines the desired state of Eventing
             properties:
               backend:
                 description: BackendSpec defines the desired state of the Eventing

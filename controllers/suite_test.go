@@ -25,10 +25,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -79,7 +78,7 @@ var _ = BeforeSuite(func() {
 
 	chartPath := filepath.Join("..", "module-chart")
 
-	err = (&KedaReconciler{
+	err = (&EventingReconciler{
 		ChartPath: chartPath,
 		Client:    k8sManager.GetClient(),
 		Scheme:    k8sManager.GetScheme(),
