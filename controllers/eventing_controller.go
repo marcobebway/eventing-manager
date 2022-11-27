@@ -100,11 +100,15 @@ type ManifestResolver struct {
 }
 
 // Get returns the chart information to be processed.
-func (m *ManifestResolver) Get(obj types.BaseCustomObject, _ logr.Logger) (types.InstallationSpec, error) {
+func (m *ManifestResolver) Get(obj types.BaseCustomObject, l logr.Logger) (types.InstallationSpec, error) {
 	eventing, valid := obj.(*v1alpha1.Eventing)
 	if !valid {
 		return types.InstallationSpec{}, fmt.Errorf("invalid type conversion for %s", client.ObjectKeyFromObject(obj))
 	}
+
+	l.Info("Eventing",
+		"backend", eventing.Spec.BackendSpec.Type,
+	)
 
 	flags, err := structToFlags(eventing.Spec)
 	if err != nil {

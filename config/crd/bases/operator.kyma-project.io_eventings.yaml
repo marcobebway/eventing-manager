@@ -43,7 +43,7 @@ spec:
                     description: BackendType is the supported Eventing backend type.
                     enum:
                     - nats
-                    - jetstream
+                    - eventmesh
                     type: string
                 required:
                 - type

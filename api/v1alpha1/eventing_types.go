@@ -23,12 +23,12 @@ import (
 )
 
 // BackendType is the supported Eventing backend type.
-// +kubebuilder:validation:Enum=nats;jetstream
+// +kubebuilder:validation:Enum=nats;eventmesh
 type BackendType string
 
 const (
 	BackendTypeNats      = BackendType("nats")
-	BackendTypeJetStream = BackendType("jetstream")
+	BackendTypeEventMesh = BackendType("eventmesh")
 )
 
 // BackendSpec defines the desired state of the Eventing backend.
