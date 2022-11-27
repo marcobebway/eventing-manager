@@ -1,3 +1,4 @@
+{{if eq .Values.backend.type "nats"}}
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -290,3 +291,4 @@ spec:
         storageClassName: {{ .Values.nats.jetstream.fileStorage.storageClassName | quote }}
         {{- end }}
   {{- end }}
+{{- end }}

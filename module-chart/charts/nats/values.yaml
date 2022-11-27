@@ -265,3 +265,6 @@ exporter:
     path: /metrics
     # interval:
     # scrapeTimeout:
+
+backend:
+  type: "nats"
