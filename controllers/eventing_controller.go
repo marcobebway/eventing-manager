@@ -106,14 +106,15 @@ func (m *ManifestResolver) Get(obj types.BaseCustomObject, l logr.Logger) (types
 		return types.InstallationSpec{}, fmt.Errorf("invalid type conversion for %s", client.ObjectKeyFromObject(obj))
 	}
 
-	l.Info("Eventing",
-		"backend", eventing.Spec.BackendSpec.Type,
-	)
-
 	flags, err := structToFlags(eventing.Spec)
 	if err != nil {
 		return types.InstallationSpec{}, fmt.Errorf("resolving manifest failed: %w", err)
 	}
+
+	l.Info("Eventing",
+		"flags", flags,
+		"backend", eventing.Spec.BackendSpec.Type,
+	)
 
 	return types.InstallationSpec{
 		ChartPath: m.chartPath,
