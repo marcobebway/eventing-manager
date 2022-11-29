@@ -27,8 +27,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/eventing-manager/api/v1alpha1"
-	"github.com/kyma-project/module-manager/operator/pkg/declarative"
-	"github.com/kyma-project/module-manager/operator/pkg/types"
+	"github.com/kyma-project/module-manager/pkg/declarative"
+	"github.com/kyma-project/module-manager/pkg/types"
 )
 
 const (
@@ -68,6 +68,7 @@ func (r *EventingReconciler) initReconciler(mgr ctrl.Manager) error {
 	return r.Inject(mgr, &v1alpha1.Eventing{},
 		declarative.WithManifestResolver(manifestResolver),
 		declarative.WithResourcesReady(true),
+		declarative.WithFinalizer("eventing-manager.kyma-project.io/deletion-hook"),
 	)
 }
 
