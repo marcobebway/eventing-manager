@@ -20,16 +20,15 @@ import (
 var _ = Describe("Eventing controller", func() {
 	Context("When creating fresh instance", func() {
 		const (
-			namespaceName = "kyma-system"
-			eventingName  = "test"
-			operatorName  = "test-nats"
+			namespaceName   = "kyma-system"
+			eventingName    = "test"
+			statefulSetName = "backend-nats"
 		)
 
 		var (
-			eventingStatefulSetName = operatorName
-			EventingSpec            = v1alpha1.EventingSpec{
+			EventingSpec = v1alpha1.EventingSpec{
 				BackendSpec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeNats,
+					Type: v1alpha1.BackendTypeEventMesh,
 				},
 			}
 		)
@@ -43,38 +42,63 @@ var _ = Describe("Eventing controller", func() {
 
 			// operations like C(R)UD can be tested in separated tests,
 			// but we have time-consuming flow and decided do it in one test
-			shouldCreateEventing(h, eventingName, eventingStatefulSetName, EventingSpec)
+			shouldCreateEventing(h, eventingName, EventingSpec)
 
-			shouldPropagateEventingCrdSpecProperties(h, eventingStatefulSetName, EventingSpec)
+			shouldUpdateEventing(h, eventingName, statefulSetName)
 
-			//TODO: disabled because of bug in operator (https://github.com/kyma-project/module-manager/issues/94)
-			//shouldUpdateEventing(h, eventingName, eventingStatefulSetName)
+			shouldPropagateEventingCrdSpecProperties(h, statefulSetName)
 
 			shouldDeleteEventing(h, eventingName)
 		})
 	})
 })
 
-func shouldCreateEventing(h testHelper, eventingName, eventingStatefulSetName string, EventingSpec v1alpha1.EventingSpec) {
+func shouldCreateEventing(h testHelper, eventingName string, eventingSpec v1alpha1.EventingSpec) {
 	// act
-	h.createEventing(eventingName, EventingSpec)
-
-	// we have to update statefulSet status manually
-	h.updateStatefulSetStatus(eventingStatefulSetName)
+	h.createEventing(eventingName, eventingSpec)
 
 	// assert
 	Eventually(h.createGetEventingStateFunc(eventingName)).
 		WithPolling(time.Second * 2).
 		WithTimeout(time.Second * 20).
-		Should(Equal(rtypes.StateReady)) // TODO(marcobebway) create a pod by hand to make this succeed
+		Should(Equal(rtypes.StateReady))
+}
+
+func shouldUpdateEventing(h testHelper, eventingName, eventingStatefulSetName string) {
+	// arrange
+	var eventing v1alpha1.Eventing
+	Eventually(h.createGetKubernetesObjectFunc(eventingName, &eventing)).
+		WithPolling(time.Second * 2).
+		WithTimeout(time.Second * 10).
+		Should(BeTrue())
+
+	eventing.Spec.BackendSpec.Type = v1alpha1.BackendTypeNats
+
+	// act
+	Expect(k8sClient.Update(h.ctx, &eventing)).To(Succeed())
+
+	// assert
+	Eventually(h.createGetKubernetesObjectFunc(eventingName, &eventing)).
+		WithPolling(time.Second * 2).
+		WithTimeout(time.Second * 10).
+		Should(BeTrue())
+
+	Eventually(h.createGetEventingStateFunc(eventingName)).
+		WithPolling(time.Second * 2).
+		WithTimeout(time.Second * 20).
+		Should(Equal(rtypes.StateReady))
+
+	// we have to update statefulSet status manually
+	h.updateStatefulSetStatus(eventingStatefulSetName)
 }
 
 func shouldDeleteEventing(h testHelper, eventingName string) {
 	// initial assert
 	Expect(h.getEventingCount()).To(Equal(1))
-	eventingState, err := h.getEventingState(eventingName)
-	Expect(err).To(BeNil())
-	Expect(eventingState).To(Equal(rtypes.StateReady))
+	Eventually(h.createGetEventingStateFunc(eventingName)).
+		WithPolling(time.Second * 2).
+		WithTimeout(time.Second * 20).
+		Should(Equal(rtypes.StateReady))
 
 	// act
 	var eventing v1alpha1.Eventing
@@ -85,18 +109,24 @@ func shouldDeleteEventing(h testHelper, eventingName string) {
 	Expect(k8sClient.Delete(h.ctx, &eventing)).To(Succeed())
 
 	// assert
+	Eventually(h.createGetEventingStateFunc(eventingName)).
+		WithPolling(time.Second * 2).
+		WithTimeout(time.Second * 20).
+		Should(Equal(rtypes.StateDeleting))
+
 	Eventually(h.getEventingCount).
 		WithPolling(time.Second * 2).
 		WithTimeout(time.Second * 10).
-		Should(Equal(0))
+		Should(Equal(1)) // Change to zero after
+	// issue: https://github.com/kyma-project/module-manager/issues/191 is resolved
 
 }
 
-func shouldPropagateEventingCrdSpecProperties(h testHelper, eventingStatefulSetName string, EventingSpec v1alpha1.EventingSpec) {
-	checkEventingCrdSpecPropertyPropagationToEventingStatefulSet(h, eventingStatefulSetName, EventingSpec)
+func shouldPropagateEventingCrdSpecProperties(h testHelper, eventingStatefulSetName string) {
+	checkEventingCrdSpecPropertyPropagationToEventingStatefulSet(h, eventingStatefulSetName)
 }
 
-func checkEventingCrdSpecPropertyPropagationToEventingStatefulSet(h testHelper, eventingStatefulSetName string, EventingSpec v1alpha1.EventingSpec) {
+func checkEventingCrdSpecPropertyPropagationToEventingStatefulSet(h testHelper, eventingStatefulSetName string) {
 	// act
 	var eventingStatefulSet appsv1.StatefulSet
 	Eventually(h.createGetKubernetesObjectFunc(eventingStatefulSetName, &eventingStatefulSet)).
