@@ -14,7 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/eventing-manager/api/v1alpha1"
-	rtypes "github.com/kyma-project/module-manager/operator/pkg/types"
+	rtypes "github.com/kyma-project/module-manager/pkg/types"
 )
 
 var _ = Describe("Eventing controller", func() {

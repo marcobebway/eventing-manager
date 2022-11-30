@@ -6,4 +6,4 @@ metadata:
   name: eventing-sample
 spec:
   backend:
-    type: "nats"
+    type: "eventmesh"
