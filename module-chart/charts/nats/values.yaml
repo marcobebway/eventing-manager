@@ -266,4 +266,4 @@ exporter:
     # interval:
     # scrapeTimeout:
 
-type: "nats"
+enabled: true

@@ -124,7 +124,11 @@ func (m *ManifestResolver) Get(obj types.BaseCustomObject, l logr.Logger) (types
 				"Namespace":       chartNs,
 				"CreateNamespace": true,
 			},
-			SetFlags: flags,
+			SetFlags: types.Flags{
+				"nats": map[string]interface{}{
+					"enabled": eventing.Spec.BackendSpec.Type == v1alpha1.BackendTypeNats,
+				},
+			},
 		},
 	}, nil
 }
