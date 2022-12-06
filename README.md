@@ -14,7 +14,7 @@ This is a PoC for the Eventing manager to provision and deprovision Kyma Eventin
 - [x] Eventing manager scaffolding.
 - [x] Pass installation overrides from the Eventing manager to the Eventing charts.
 - [x] Provision NATS.
-- [ ] Deprovision NATS.
+- [x] Deprovision NATS.
 - [x] Update the Eventing CR status.
 - [ ] Add/Remove resources and update the status when dependencies come and go.
 - [x] Control the naming of the Eventing operator and the Eventing resources.
@@ -179,13 +179,29 @@ status:
 
 **The Eventing resources are provisioned/deprovisioned**
 
-- When the Eventing module is added/removed.
+- If the Eventing backend is changed from `eventmesh` to `nats`. 
 
-  TBD
+  When the Eventing CR has `spec.backend.type: "nats"`, there should be a statefulset for `nats`:
+ 
+  ```bash
+  $ kubectl get statefulsets.apps -n kyma-system
+  
+  NAME            READY   AGE
+  eventing-nats   0/1     27s
+  ```
 
-- When the Eventing backend is switched from `eventmesh` to `nats` and vice-versa. 
+  When the Eventing backend is changed to `spec.backend.type: "eventmesh"`, the `nats` statefulset will be deleted:
+  
+  ```bash
+  $ kubectl get statefulsets.apps -n kyma-system
+  
+  No resources found in kyma-system namespace.
+  ```
 
-  TBD
+- If the Eventing module is added/removed from the Kyma CR `spec.modules`.
+
+  > Note: Currently this is not working, but there is a [PR](https://github.com/kyma-project/module-manager/pull/195) 
+  to fix it on the module manager.
 
 ### Cleanup
 
@@ -236,11 +252,20 @@ Where `nats` is the chart name, and `enabled` is the value to be overridden
 
 ### Deprovision Eventing resources
 
-TBD.
+Inject the following `declarative.ReconcilerOption` in the Eventing controller (see [controller](controllers/eventing_controller.go)).
+
+```
+declarative.WithPostRenderTransform # to add prune labels
+declarative.WithPostRun             # to remove resource by prune labels
+```
 
 ### React on the availability of the Eventing dependencies
 
-TBD.
+This is not yet decided:
+- Either it will be done globally by the module manager for all Kyma modules, or
+- The Eventing manager should take care of this.
+
+Either way, this seems to not be a blocker for the Eventing manager.
 
 ## Followup issues
 
