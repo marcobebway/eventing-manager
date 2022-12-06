@@ -49,6 +49,9 @@ $ kubectl edit eventings.operator.kyma-project.io -n kcp-system default-kyma-eve
 #     type: "eventmesh"
 ```
 
+> Note: The Eventing CRD included in this PoC is for demo purposes only. The actual Eventing CRD should be covered 
+> in this design proposal [ticket](https://github.com/kyma-project/kyma/issues/16248).
+
 **The backend changes are reported in the Eventing manager logs**
 
 ```bash
