@@ -18,7 +18,7 @@ This is a PoC for the Eventing manager to provision and deprovision Kyma Eventin
 - [x] Update the Eventing CR status.
 - [ ] Add/Remove resources and update the status when dependencies come and go.
 - [x] Control the naming of the Eventing operator and the Eventing resources.
-- [x] Write unit-tests.
+- [x] Write unit-tests (used for consistency checks and fast feedback loop).
 - [ ] Implement graceful shutdown to deprovision created resources.
 
 ## Setup
