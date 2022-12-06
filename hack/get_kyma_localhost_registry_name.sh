@@ -16,7 +16,7 @@ function get_kyma_localhost_registry_name {
 		| wc -l \
 		| xargs) \
 	       || 0
-		[[ "$_COREDNS_RDY" == 1 ]] && echo 'coredns rdy to patch' && break
+		[[ "$_COREDNS_RDY" == 1 ]] && echo 'coredns ready to patch' && break
 		sleep 5
 		((_NUMBER = _NUMBER + 1))
 	done
