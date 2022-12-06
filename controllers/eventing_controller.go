@@ -17,10 +17,15 @@ limitations under the License.
 package controllers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
 	"github.com/go-logr/logr"
+	v1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -32,7 +37,10 @@ import (
 )
 
 const (
-	chartNs = "kyma-system"
+	chartNamespace  = "kyma-system"
+	pruneLabelKey   = "eventing-manager.kyma-project.io/prune"
+	pruneLabelValue = "true"
+	finalizer       = "eventing-manager.kyma-project.io/deletion-hook"
 )
 
 // EventingReconciler reconciles a Eventing object
@@ -66,9 +74,10 @@ type EventingReconciler struct {
 func (r *EventingReconciler) initReconciler(mgr ctrl.Manager) error {
 	manifestResolver := &ManifestResolver{chartPath: r.ChartPath}
 	return r.Inject(mgr, &v1alpha1.Eventing{},
-		declarative.WithManifestResolver(manifestResolver),
 		declarative.WithResourcesReady(true),
-		declarative.WithFinalizer("eventing-manager.kyma-project.io/deletion-hook"),
+		declarative.WithFinalizer(finalizer),
+		declarative.WithManifestResolver(manifestResolver),
+		withPruneStatefulSetsByLabels(map[string]string{pruneLabelKey: pruneLabelValue}),
 	)
 }
 
@@ -121,7 +130,7 @@ func (m *ManifestResolver) Get(obj types.BaseCustomObject, l logr.Logger) (types
 		ChartPath: m.chartPath,
 		ChartFlags: types.ChartFlags{
 			ConfigFlags: types.Flags{
-				"Namespace":       chartNs,
+				"Namespace":       chartNamespace,
 				"CreateNamespace": true,
 			},
 			SetFlags: types.Flags{
@@ -131,4 +140,57 @@ func (m *ManifestResolver) Get(obj types.BaseCustomObject, l logr.Logger) (types
 			},
 		},
 	}, nil
+}
+
+func withPruneStatefulSetsByLabels(labelSet labels.Set) declarative.ReconcilerOption {
+	return declarative.With(
+		declarative.WithPostRenderTransform(labelInjector(labelSet)),
+		declarative.WithPostRun(pruneStatefulSetsByLabels(labelSet)),
+	)
+}
+
+func labelInjector(labelSet labels.Set) types.ObjectTransform {
+	return func(_ context.Context, _ types.BaseCustomObject, resources *types.ManifestResources) error {
+		for i := range resources.Items {
+			if resources.Items[i].GroupVersionKind().Kind == "StatefulSet" {
+				ls := resources.Items[i].GetLabels()
+				if ls == nil {
+					ls = map[string]string{}
+				}
+				for key := range labelSet {
+					ls[key] = labelSet[key]
+				}
+				resources.Items[i].SetLabels(ls)
+			}
+		}
+		return nil
+	}
+}
+
+func pruneStatefulSetsByLabels(labelSet labels.Set) types.PostRun {
+	return func(ctx context.Context, c client.Client, obj types.BaseCustomObject, _ types.ResourceLists) error {
+		eventing := &v1alpha1.Eventing{}
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.(*unstructured.Unstructured).Object, eventing); err != nil {
+			return fmt.Errorf("invalid type conversion for %s", client.ObjectKeyFromObject(obj))
+		}
+
+		if eventing.Spec.BackendSpec.Type == v1alpha1.BackendTypeEventMesh {
+			statefulSetList := &v1.StatefulSetList{}
+			listOptions := &client.ListOptions{LabelSelector: labels.SelectorFromSet(labelSet)}
+			if err := c.List(ctx, statefulSetList, listOptions); err != nil {
+				return fmt.Errorf("failed to list statefulsets to prune when switching to eventmesh: %w", err)
+			}
+
+			propagationPolicy := metav1.DeletePropagationForeground
+			deleteOptions := &client.DeleteOptions{PropagationPolicy: &propagationPolicy}
+			for i := range statefulSetList.Items {
+				if err := c.Delete(ctx, &statefulSetList.Items[i], deleteOptions); err != nil {
+					return fmt.Errorf("failed to prune statefulsets %s when switching to eventmesh: %w",
+						client.ObjectKeyFromObject(&statefulSetList.Items[i]), err)
+				}
+			}
+		}
+
+		return nil
+	}
 }
