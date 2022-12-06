@@ -35,6 +35,11 @@ module-image:
 	@make -C ${PROJECT_ROOT} module-image \
 		IMG=localhost:${REGISTRY_PORT}/${MANAGER_IMAGE_NAME}:${MANAGER_IMAGE_TAG}
 
+.PHONY: module-image-dev
+module-image-dev:
+	@make -C ${PROJECT_ROOT} module-image-dev \
+		IMG=localhost:${REGISTRY_PORT}/${MANAGER_IMAGE_NAME}:${MANAGER_IMAGE_TAG}
+
 .PHONY: module-build
 module-build:
 	@make -C ${PROJECT_ROOT} module-build \
@@ -75,7 +80,10 @@ install-module:
 		--kustomization https://github.com/kyma-project/module-manager/config/default@main
 
 .PHONY: run
-run: build-binary kyma create-k3d module-image patch-coredns module-build fix-template install-module patch-mod-mgr-role enable-module verify
+run: kyma create-k3d module-image patch-coredns module-build fix-template install-module patch-mod-mgr-role enable-module verify
+
+.PHONY: run-dev
+run-dev: build-dev kyma create-k3d module-image-dev patch-coredns module-build fix-template install-module patch-mod-mgr-role enable-module verify
 
 .PHONY: stop
 stop: delete-k3d
@@ -84,6 +92,6 @@ stop: delete-k3d
 verify:
 	@${PROJECT_ROOT}/hack/verify_kyma_status.sh
 
-.PHONY: build-binary
-build-binary:
-	@make -C ${PROJECT_ROOT} build
+.PHONY: build-dev
+build-dev:
+	@make -C ${PROJECT_ROOT} build-dev

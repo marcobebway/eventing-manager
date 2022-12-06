@@ -3,7 +3,7 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "nats.fullname" . }}
+  name: eventing-{{ include "nats.fullname" . }}
   namespace: {{ .Release.Namespace | quote }}
   labels:
     {{- include "nats.labels" . | nindent 4 }}

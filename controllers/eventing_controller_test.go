@@ -22,7 +22,7 @@ var _ = Describe("Eventing controller", func() {
 		const (
 			namespaceName   = "kyma-system"
 			eventingName    = "test"
-			statefulSetName = "nats"
+			statefulSetName = "eventing-nats"
 		)
 
 		var (

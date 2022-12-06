@@ -7,7 +7,7 @@ function get_kyma_localhost_registry_name {
 	local _COREDNS_RDY=0
 	local _NUMBER=1
 
-	while [[ $_NUMBER -le 12*1 ]] ; do
+	while [[ $_NUMBER -le 12*2 ]] ; do
 		echo ">--> waiting to patch coredns #$_NUMBER"
 		_COREDNS_RDY=$(kubectl get cm \
 			-n kube-system coredns \
@@ -31,7 +31,7 @@ function get_kyma_localhost_registry_name {
 	      | yq '.data.NodeHosts' \
 	      | grep -e " ${_REGISTRY_NAME}$" \
 	      | sed "s/${_REGISTRY_NAME}/${_REGISTRY_NAME}.localhost/g")
-	
+
 	yq -i ".data.NodeHosts += \"$_LOCAL_REGISTRY_NAME\"" ${_TMPFILE}
 	kubectl patch -n kube-system cm coredns --patch-file ${_TMPFILE}
 }

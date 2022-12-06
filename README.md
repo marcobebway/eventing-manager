@@ -2,247 +2,251 @@
 
 ## Overview
 
-Eventing Manager is a module compatible with Lifecycle Manager that allows you to add EVENTING Event Driven Autoscaler to the Kyma ecosystem. 
+This is a PoC for the Eventing manager to provision and deprovision Kyma Eventing resources.
 
-See also:
-- [lifecycle-manager documetation](https://github.com/kyma-project/lifecycle-manager)
+> Note: This is not an official implementation of the Eventing module manager.
+ 
+> Note: Scaffolding is inspired by the Kyma [template-operator](https://github.com/kyma-project/template-operator) and
+> the [Keda manager](https://github.com/kyma-project/keda-manager).
 
-## Prerequisites
+## Tasks
 
-- Access to a k8s cluster
-- [kubectl](https://kubernetes.io/docs/tasks/tools/)
-- [kubebuilder](https://book.kubebuilder.io/)
+- [x] Eventing manager scaffolding.
+- [x] Pass installation overrides from the Eventing manager to the Eventing charts.
+- [x] Provision NATS.
+- [ ] Deprovision NATS.
+- [x] Update the Eventing CR status.
+- [ ] Add/Remove resources and update the status when dependencies come and go.
+- [x] Control the naming of the Eventing operator and the Eventing resources.
+- [x] Write unit-tests.
+- [ ] Implement graceful shutdown to deprovision created resources.
+
+## Setup
+
+### Provision Kyma and the Eventing manager on k3d
 
 ```bash
-# you could use one of the following options
-
-# option 1: using brew
-brew install kubebuilder
-
-# option 2: fetch sources directly
-curl -L -o kubebuilder https://go.kubebuilder.io/dl/latest/$(go env GOOS)/$(go env GOARCH)
-chmod +x kubebuilder && mv kubebuilder /usr/local/bin/
+$ cd eventing-manager/hack/local/eventing/
+$ make run-dev
 ```
 
-## Manual `eventing-manager` installation
+> Note: Since the module-manager, lifecycle-manager and Kyma CLI is still in alpha development phase, there is a lot
+> of resource patching to correctly set up the k3d cluster. Currently, this is abstracted using the make target 
+> `make run-dev` which is suitable only for local development on k3d.
 
+> Note: Always refer to the latest version of the Kyma [template-operator](https://github.com/kyma-project/template-operator)
+> as a reference implementation of Kyma module managers.
 
-1. Clone project
+### Switch Eventing backends
+
+**The Eventing backend can be configured in the Eventing CR**
 
 ```bash
-git clone https://github.com/kyma-project/eventing-manager.git && cd eventing-manager/
+$ kubectl edit eventings.operator.kyma-project.io -n kcp-system default-kyma-eventing
+
+# spec:
+#   backend:
+#     type: "eventmesh"
 ```
 
-2. Set `eventing-manager` image name
+**The backend changes are reported in the Eventing manager logs**
 
 ```bash
-export IMG=custom-eventing-manager:0.0.1
-export K3D_CLUSTER_NAME=eventing-manager-demo
+$ stern -n kyma-system eventing-controller-manager
+
+{
+   "controller":"eventing",
+   "controllerGroup":"operator.kyma-project.io",
+   "controllerKind":"Eventing",
+   "eventing":{
+      "name":"default-kyma-eventing",
+      "namespace":"kcp-system"
+   },
+   "namespace":"kcp-system",
+   "name":"default-kyma-eventing",
+   "reconcileID":"7a9a8e34-ff18-4f82-bc2b-f79e41d2e883",
+   "flags":{
+      "backend":{
+         "type":"nats"
+      }
+   },
+   "backend":"nats"
+}
 ```
 
-3. Build project
+### Add/Remove the Eventing module
+
+**The active modules can be configured in the Kyma CR `spec.modules`**
 
 ```bash
-make build
+$ kubectl edit kymas.operator.kyma-project.io -n kcp-system default-kyma
+
+# spec:
+#   modules:
+#   - channel: alpha
+#     name: eventing
 ```
 
-4. Build image
+### Verification
+
+**The Eventing CR status should be ready**
 
 ```bash
-make docker-build
-```
+$ kubectl get eventings.operator.kyma-project.io -n kcp-system default-kyma-eventing -oyaml
 
-5. Push image to registry
-
-<div tabs name="Push image" group="eventing-installation">
-  <details>
-  <summary label="k3d">
-  k3d
-  </summary>
-
-   ```bash
-   k3d image import $IMG -c $K3D_CLUSTER_NAME
-   ```
-  </details>
-  <details>
-  <summary label="Docker registry">
-  Globally available Docker registry
-  </summary>
-
-   ```bash
-   make docker-push
-   ```
-
-  </details>
-</div>
-
-6. Deploy
-
-```bash
-make deploy
-```
-
-## Using `eventing-manager`
-
-- Create Eventing instance
-
-```bash
-kubectl apply -f config/samples/operator_v1alpha1_eventing.yaml
-```
-
-- Delete Eventing instance
-
-```bash
-kubectl delete -f config/samples/operator_v1alpha1_eventing.yaml
-```
-
-- Update Eventing properties
-
-This example shows how you can modify the Eventing logging level using the `eventing.operator.kyma-project.io` CR
-
-```bash
-cat <<EOF | kubectl apply -f -
 apiVersion: operator.kyma-project.io/v1alpha1
 kind: Eventing
 metadata:
-  name: eventing-sample
+  creationTimestamp: "2022-12-05T19:53:13Z"
+  finalizers:
+  - eventing-manager.kyma-project.io/deletion-hook
+  generation: 1
+  labels:
+    operator.kyma-project.io/kyma-name: eventing-sample
+  name: default-kyma-eventing
+  namespace: kcp-system
+  resourceVersion: "883"
+  uid: 9b7c0c06-aa3e-43ba-88b6-23a589a34fcc
 spec:
   backend:
-    type: "nats"
-EOF
+    type: nats
+status:
+  state: Ready
 ```
 
-## Installation in modular Kyma on the local k3d cluster
-
->>NOTE: The following steps are scripted in form of make targets. You can execute all the steps by calling `make run` target from `hack/local` folder.
-
-1. Setup local k3d cluster and local Docker registry
-
-# Provision k3d cluster
+**The Kyma CR status should be ready**
 
 ```bash
-kyma provision k3d 
-```
-2. Add the `etc/hosts` entry for the local `k3d-kyma-registry`.
+$ kubectl get kymas.operator.kyma-project.io -n kcp-system default-kyma -oyaml
 
-```
-127.0.0.1 k3d-kyma-registry.localhost
-127.0.0.1 k3d-kyma-registry
-```
-
-3. Build Eventing Manager image
-```bash
-make module-image IMG_REGISTRY=k3d-kyma-registry:5001/unsigned/operator-images
-```
-
-This builds a Docker image for Eventing Manager and pushes it to the registry and path, as defined in `IMG_REGISTRY`.
-
-4. Build Eventing module
-```bash
-make module-build IMG_REGISTRY=k3d-kyma-registry:5001/unsigned/operator-images MODULE_REGISTRY=k3d-kyma-registry.localhost:5001/unsigned
-```
-
-This builds an OCI image for Eventing module and pushes it to the registry and path, as defined in `MODULE_REGISTRY`.
-
-5. Verify if the module and the manager's image are pushed to the local registry
-
-```bash
-curl k3d-kyma-registry.localhost:5001/v2/_catalog
-{"repositories":["unsigned/component-descriptors/kyma.project.io/module/eventing","unsigned/operator-images/eventing-operator"]}
-```
-
-7. Inpect the generated module template
-
-The following are temporary workarounds.
-
-Edit the `template.yaml` file and:
-
- - change `target` to `control-plane`
->**NOTE:** This is only required in the single cluster mode
-
-```yaml
+apiVersion: operator.kyma-project.io/v1alpha1
+kind: Kyma
+metadata:
+  annotations:
+    cli.kyma-project.io/source: deploy
+  creationTimestamp: "2022-12-05T19:53:03Z"
+  finalizers:
+  - operator.kyma-project.io/Kyma
+  generation: 3
+  labels:
+    operator.kyma-project.io/managed-by: lifecycle-manager
+  name: default-kyma
+  namespace: kcp-system
+  resourceVersion: "677"
+  uid: b94836f0-b5a8-45af-b8fa-0bbb9161b1b5
 spec:
-  target: control-plane
-```
-
-- change the existing repository context in `spec.descriptor.component`:
->**NOTE:** Because Pods inside the k3d cluster use the docker-internal port of the registry, it tries to resolve the registry against port 5000 instead of 5001. K3d has registry aliases but module-manager is not part of k3d and thus does not know how to properly alias `k3d-kyma-registry.localhost:5001`
-
-```yaml
-repositoryContexts:                                                                           
-- baseUrl: k3d-kyma-registry.localhost:5000/unsigned                                                   
-  componentNameMapping: urlPath                                                               
-  type: ociRegistry
-```
-
-8. Install modular Kyma on the k3d cluster
-
-This installs the latest versions of `module-manager` and `lifecycle-manager`
-
-You can use the `--template` flag to deploy the Eventing module manifest from the beginning or apply it using kubectl later.
-
-```bash
-kyma alpha deploy  --template=./template.yaml
-
-- Kustomize ready
-- Lifecycle Manager deployed
-- Module Manager deployed
-- Modules deployed
-- Kyma CR deployed
-- Kyma deployed successfully!
-
-Kyma is installed in version:
-Kyma installation took:		18 seconds
-
-Happy Kyma-ing! :)
-```
-
-Kyma installation is ready, but no module is activated yet
-```bash
-kubectl get kymas.operator.kyma-project.io -A
-NAMESPACE    NAME           STATE   AGE
-kcp-system   default-kyma   Ready   71s
-```
-
-Eventing Module is a known module, but not activated
-```bash
-kubectl get moduletemplates.operator.kyma-project.io -A 
-NAMESPACE    NAME                  AGE
-kcp-system   moduletemplate-eventing   2m24s
-```
-
-9. Give Module Manager permission to install CustomResourceDefinition (CRD) cluster-wide
-
->**NOTE:** This is a temporary workaround and is only required in the single-cluster mode
-
-Module-manager must be able to apply CRDs to install modules. In the remote mode (with control-plane managing remote clusters) it gets an administrative kubeconfig, targeting the remote cluster to do so. But in local mode (single-cluster mode), it uses Service Account and does not have permission to create CRDs by default.
-
-Run the following to make sure the module manager's Service Account becomes an administrative role:
-
-```bash
-kubectl edit clusterrole module-manager-manager-role
-```
-add
-```yaml
-- apiGroups:                                                                                                                  
-  - "*"                                                                                                                       
-  resources:                                                                                                                  
-  - "*"                                                                                                                       
-  verbs:                                                                                                                      
-  - "*"
-```
-
-10. Enable Eventing in Kyma
-
-Edit Kyma CR ...
-
-```bash
-kubectl edit kymas.operator.kyma-project.io -n kcp-system default-kyma
-```
-..to add Eventing module
-
-```yaml
-spec:
+  channel: regular
   modules:
-  - name: eventing
+  - channel: alpha
+    name: eventing
+  sync:
+    enabled: false
+    moduleCatalog: true
+    noModuleCopy: true
+    strategy: secret
+status:
+  activeChannel: regular
+  conditions:
+  - lastTransitionTime: "2022-12-05T19:53:13Z"
+    message: all modules are in ready state
+    observedGeneration: 3
+    reason: ModulesAreReady
+    status: "True"
+    type: Ready
+  moduleStatus:
+  - generation: 1
+    moduleName: eventing
+    name: default-kyma-eventing
+    namespace: kcp-system
+    state: Ready
+    templateInfo:
+      channel: regular
+      generation: 1
+      gvk:
+        group: operator.kyma-project.io
+        kind: Manifest
+        version: v1alpha1
+      name: moduletemplate-eventing
+      namespace: kcp-system
+      version: 0.0.4
+  state: Ready
 ```
+
+> Note: The Eventing module should be reported as ready in the Kyma CR status.
+
+**The Eventing resources are provisioned/deprovisioned**
+
+- When the Eventing module is added/removed.
+
+  TBD
+
+- When the Eventing backend is switched from `eventmesh` to `nats` and vice-versa. 
+
+  TBD
+
+### Cleanup
+
+```bash
+$ cd eventing-manager/hack/local/eventing/
+$ make stop
+```
+
+## Compatibility issues
+
+- The module-manager, lifecycle-manager and Kyma CLI can go out of sync or have breaking changes at any time, this is 
+  why we use the `kustomization` flag to pass their correct templates to the Kyma CLI. Also, the `template` flag is
+  used for development only and can be removed at anytime.
+
+  ```bash
+  $ kyma alpha deploy \
+      --template=module-template.yaml \
+      --kustomization https://github.com/kyma-project/lifecycle-manager/config/default@main \
+      --kustomization https://github.com/kyma-project/module-manager/config/default@main
+  ```
+
+## How-to
+
+### Pass installation overrides from the Eventing manager to the charts
+
+The installation overrides are passed as InstallationSpec flags to the module manager reconciler which internally
+applies them on the Eventing module charts. The flags are passed as follows:
+
+```
+types.InstallationSpec{
+    ChartPath: m.chartPath,
+    ChartFlags: types.ChartFlags{
+        ConfigFlags: types.Flags{
+            "Namespace":       chartNs,
+            "CreateNamespace": true,
+        },
+        SetFlags: types.Flags{
+            "nats": map[string]interface{}{
+                "enabled": eventing.Spec.BackendSpec.Type == v1alpha1.BackendTypeNats,
+            },
+        },
+    },
+}
+```
+
+Where `nats` is the chart name, and `enabled` is the value to be overridden 
+(see [controller](controllers/eventing_controller.go) and [chart](module-chart/charts/nats/values.yaml)).
+
+### Deprovision Eventing resources
+
+TBD.
+
+### React on the availability of the Eventing dependencies
+
+TBD.
+
+## Followup issues
+
+- https://github.com/kyma-project/module-manager/issues/188
+- https://github.com/kyma-project/module-manager/issues/190
+- https://github.com/kyma-project/module-manager/issues/191
+
+## References
+
+- [Module manager](https://github.com/kyma-project/module-manager).
+- [Lifecycle manager](https://github.com/kyma-project/lifecycle-manager).
+- [Template operator](https://github.com/kyma-project/template-operator).

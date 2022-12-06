@@ -115,6 +115,10 @@ test: manifests generate fmt vet envtest ## Run tests.
 
 .PHONY: build
 build: manifests generate #fmt vet ## Build manager binary.
+	go build -o bin/manager main.go
+
+.PHONY: build-dev
+build-dev: manifests generate #fmt vet ## Build manager binary.
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/manager main.go
 
 .PHONY: run
@@ -122,8 +126,12 @@ run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
 .PHONY: docker-build
-docker-build: #test ## Build docker image with the manager.
+docker-build: test ## Build docker image with the manager.
 	IMG=$(IMG) docker build -t ${IMG} .
+
+.PHONY: docker-build-dev
+docker-build-dev: #test ## Build docker image with the manager.
+	IMG=$(IMG) docker build -t ${IMG} -f dev.Dockerfile .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
@@ -188,6 +196,10 @@ $(ENVTEST): $(LOCALBIN)
 
 .PHONY: module-image
 module-image: docker-build docker-push ## Build the Module Image and push it to a registry defined in IMG_REGISTRY
+	echo "built and pushed module image $(IMG)"
+
+.PHONY: module-image-dev
+module-image-dev: docker-build-dev docker-push ## Build the Module Image and push it to a registry defined in IMG_REGISTRY
 	echo "built and pushed module image $(IMG)"
 
 .PHONY: module-build

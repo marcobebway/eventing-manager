@@ -2,16 +2,12 @@
 run-k3d-with-eventing:
 	@make -C ./eventing run
 
-.PHONY: busola-enable
-busola-enable:
-	@make -C ./busola busola-enable
-
 .PHONY: verify
 verify:
 	@make -C ./eventing verify
 
 .PHONY: run
-run: run-k3d-with-eventing busola-enable
+run: run-k3d-with-eventing
 
 .PHONY: test
 test: run verify
