@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/go-logr/logr v1.2.3
-	github.com/kyma-project/module-manager v0.0.0-20221207084617-a986799472f3
+	github.com/kyma-project/module-manager v0.0.0-20221207164018-ddf69229acb6
 	github.com/onsi/ginkgo/v2 v2.5.0
 	github.com/onsi/gomega v1.24.1
 	k8s.io/api v0.25.2

@@ -11,15 +11,15 @@ This is a PoC for the Eventing manager to provision and deprovision Kyma Eventin
 
 ## Tasks
 
-- [x] Eventing manager scaffolding.
-- [x] Pass installation overrides from the Eventing manager to the Eventing charts.
-- [x] Provision NATS.
-- [x] Deprovision NATS.
-- [x] Update the Eventing CR status.
-- [ ] Add/Remove resources and update the status when dependencies come and go.
-- [x] Control the naming of the Eventing operator and the Eventing resources.
-- [x] Write unit-tests (used for consistency checks and fast feedback loop).
-- [ ] Implement graceful shutdown to deprovision created resources.
+- ✅ Eventing manager scaffolding.
+- ✅ Pass installation overrides from the Eventing manager to the Eventing charts.
+- ✅ Provision NATS.
+- ✅ Deprovision NATS.
+- ✅ Update the Eventing CR status.
+- ✅ Control the naming of the Eventing operator and the Eventing resources.
+- ✅ Write unit-tests (used for consistency checks and fast feedback loop).
+- ✅ Implement graceful shutdown to deprovision created resources.
+- 🚧 [React on the availability of the Eventing dependencies](#react-on-the-availability-of-the-eventing-dependencies).
 
 ## Setup
 
@@ -272,6 +272,11 @@ Either way, this seems to not be a blocker for the Eventing manager.
 - https://github.com/kyma-project/module-manager/issues/188
 - https://github.com/kyma-project/module-manager/issues/190
 - https://github.com/kyma-project/module-manager/issues/191
+
+## Known issues
+
+- Currently, the Eventing manager can react to multiple instances of the Eventing CR. We should limit it to react to
+  exactly one instance.
 
 ## References
 
