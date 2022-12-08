@@ -275,8 +275,8 @@ Either way, this seems to not be a blocker for the Eventing manager.
 
 ## Known issues
 
-- Currently, the Eventing manager can react to multiple instances of the Eventing CR. We should limit it to react to
-  exactly one instance.
+- Currently, the Eventing manager can react to multiple instances of the Eventing CR. [We should limit it to react to
+  exactly one instance](https://github.tools.sap/kyma/backlog/issues/3298).
 
 ## References
 
