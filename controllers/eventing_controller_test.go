@@ -109,17 +109,11 @@ func shouldDeleteEventing(h testHelper, eventingName string) {
 	Expect(k8sClient.Delete(h.ctx, &eventing)).To(Succeed())
 
 	// assert
-	Eventually(h.createGetEventingStateFunc(eventingName)).
-		WithPolling(time.Second * 2).
-		WithTimeout(time.Second * 20).
-		Should(Equal(rtypes.StateDeleting))
-
 	Eventually(h.getEventingCount).
 		WithPolling(time.Second * 2).
 		WithTimeout(time.Second * 10).
 		Should(Equal(1)) // Change to zero after
 	// issue: https://github.com/kyma-project/module-manager/issues/191 is resolved
-
 }
 
 func shouldPropagateEventingCrdSpecProperties(h testHelper, eventingStatefulSetName string) {
