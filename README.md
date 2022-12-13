@@ -187,7 +187,7 @@ status:
   $ kubectl get statefulsets.apps -n kyma-system
   
   NAME            READY   AGE
-  eventing-nats   0/1     27s
+  eventing-nats   1/1     27s
   ```
 
   When the Eventing backend is changed to `spec.backend.type: "eventmesh"`, the `nats` statefulset will be deleted:
@@ -218,6 +218,7 @@ $ make stop
 
   ```bash
   $ kyma alpha deploy \
+      --ci \
       --template=module-template.yaml \
       --kustomization https://github.com/kyma-project/lifecycle-manager/config/default@main \
       --kustomization https://github.com/kyma-project/module-manager/config/default@main

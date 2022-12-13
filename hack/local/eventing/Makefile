@@ -75,6 +75,7 @@ patch-mod-mgr-role:
 .PHONY: install-module
 install-module:
 	${KYMA} alpha deploy \
+		--ci \
 		--template=${PROJECT_ROOT}/template-k3d.yaml \
 		--kustomization https://github.com/kyma-project/lifecycle-manager/config/default@main \
 		--kustomization https://github.com/kyma-project/module-manager/config/default@main
