@@ -200,9 +200,6 @@ status:
 
 - If the Eventing module is added/removed from the Kyma CR `spec.modules`.
 
-  > Note: Currently this is not working, but there is a [PR](https://github.com/kyma-project/module-manager/pull/195) 
-  to fix it on the module manager.
-
 ### Cleanup
 
 ```bash
